@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disney Trip & Savings Budget Tracker</title>
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --text-color: #333333;
+      --primary: #1e88e5;
+      --success: #2e7d32;
+      --warning: #f57c00;
+      --border: #e0e0e0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 12px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 16px;
+      font-size: 1.5rem;
+    }
+
+    /* Summary Dashboard */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      text-align: center;
+    }
+
+    .card .title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .card .value {
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    .text-success { color: var(--success); }
+    .text-warning { color: var(--warning); }
+    .text-primary { color: var(--primary); }
+
+    /* Controls Bar */
+    .controls {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      justify-content: space-between;
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    button:hover { opacity: 0.9; }
+    button.btn-secondary { background-color: #757575; }
+    button.btn-danger { background-color: #d32f2f; }
+
+    /* Tables */
+    .table-container {
+      background: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background-color: #f8f9fa;
+      font-size: 0.8rem;
+      color: #555;
+    }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 6px;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    input[type="number"] {
+      text-align: right;
+    }
+
+    .override-active {
+      border-color: var(--warning) !important;
+      background-color: #fffde7;
+    }
+
+    .actions-cell {
+      text-align: center;
+      width: 40px;
+    }
+
+    /* Mobile Responsive tweaks */
+    @media (max-width: 600px) {
+      th, td { padding: 6px 4px; }
+      .hide-mobile { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Disney Budget & Savings Tracker</h1>
+
+  <!-- Summary Cards -->
+  <div class="dashboard">
+    <div class="card">
+      <div class="title">Base Budget</div>
+      <div class="value" id="dash-base">$0</div>
+    </div>
+    <div class="card">
+      <div class="title">Bonus Income</div>
+      <div class="value text-primary" id="dash-bonus">$0</div>
+    </div>
+    <div class="card">
+      <div class="title">Actual Spent</div>
+      <div class="value" id="dash-spent">$0</div>
+    </div>
+    <div class="card">
+      <div class="title">Total Saved</div>
+      <div class="value text-success" id="dash-saved">$0</div>
+    </div>
+    <div class="card">
+      <div class="title">Left To Spend</div>
+      <div class="value text-warning" id="dash-remaining">$0</div>
+    </div>
+  </div>
+
+  <!-- Global Action Buttons -->
+  <div class="controls">
+    <div>
+      <button onclick="addItem()">+ Add Item</button>
+      <button onclick="addBonus()">+ Add Bonus Income</button>
+    </div>
+    <div>
+      <button class="btn-secondary" onclick="exportJSON()">Export JSON</button>
+      <button class="btn-secondary" onclick="document.getElementById('importFile').click()">Import JSON</button>
+      <input type="file" id="importFile" style="display:none" onchange="importJSON(event)" accept=".json">
+      <button class="btn-danger" onclick="resetToDefault()">Reset</button>
+    </div>
+  </div>
+
+  <!-- Main Budget Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Activity Item</th>
+          <th style="width: 100px;">Budget</th>
+          <th style="width: 100px;">Actual Spent</th>
+          <th style="width: 100px;">Saved (Override)</th>
+          <th style="width: 30px;"></th>
+        </tr>
+      </thead>
+      <tbody id="budget-body">
+        <!-- Rows rendered via JS -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bonus Income Table -->
+  <h3>Bonus Income / Extra Funds</h3>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Source / Description</th>
+          <th style="width: 120px;">Amount</th>
+          <th style="width: 30px;"></th>
+        </tr>
+      </thead>
+      <tbody id="bonus-body">
+        <!-- Rows rendered via JS -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Initial default dataset parsed from your raw data
+  const defaultItems = [
+    { id: 1, name: "Southwest Flight", budget: 56, spent: 0, override: null },
+    { id: 2, name: "Reagan Parking", budget: 175, spent: 0, override: null },
+    { id: 3, name: "Uber to Disney", budget: 52, spent: 0, override: null },
+    { id: 4, name: "Disney Package (Hotel + Tickets)", budget: 4265, spent: 0, override: null },
+    { id: 5, name: "Disney Dining Package", budget: 605, spent: 0, override: null },
+    { id: 6, name: "Olga Cantina", budget: 50, spent: 0, override: null },
+    { id: 7, name: "Topolinos", budget: 260, spent: 0, override: null },
+    { id: 8, name: "Fast Passes", budget: 500, spent: 0, override: null },
+    { id: 9, name: "Souvenirs", budget: 500, spent: 0, override: null },
+    { id: 10, name: "Tipping ($15 bags x2, $20 nights)", budget: 55, spent: 0, override: null },
+    { id: 11, name: "Travel Food", budget: 150, spent: 0, override: null },
+    { id: 12, name: "Uber to Airport", budget: 32, spent: 0, override: null },
+    { id: 13, name: "Miscellaneous Extra", budget: 200, spent: 0, override: null }
+  ];
+
+  const defaultBonuses = [];
+
+  let state = {
+    items: [],
+    bonuses: []
+  };
+
+  // Format numbers to USD
+  function fmt(num) {
+    return '$' + Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  // Load from local storage or reset
+  function init() {
+    const saved = localStorage.getItem('disney_budget_data');
+    if (saved) {
+      try {
+        state = JSON.parse(saved);
+      } catch (e) {
+        state = { items: defaultItems, bonuses: defaultBonuses };
+      }
+    } else {
+      state = { items: defaultItems, bonuses: defaultBonuses };
+    }
+    render();
+  }
+
+  function save() {
+    localStorage.setItem('disney_budget_data', JSON.stringify(state));
+    calculateAndRenderDashboard();
+  }
+
+  function render() {
+    renderBudgetTable();
+    renderBonusTable();
+    calculateAndRenderDashboard();
+  }
+
+  function renderBudgetTable() {
+    const tbody = document.getElementById('budget-body');
+    tbody.innerHTML = '';
+
+    state.items.forEach((item, idx) => {
+      const tr = document.createElement('tr');
+      
+      const calcSaved = item.budget - item.spent;
+      const isOverridden = item.override !== null && item.override !== "";
+      const displaySavedPlaceholder = calcSaved;
+
+      tr.innerHTML = `
+        <td>
+          <input type="text" value="${escapeHtml(item.name)}" onchange="updateItem(${idx}, 'name', this.value)">
+        </td>
+        <td>
+          <input type="number" step="any" value="${item.budget}" onchange="updateItem(${idx}, 'budget', this.value)">
+        </td>
+        <td>
+          <input type="number" step="any" value="${item.spent \vert{}\vert{} ''}" placeholder="0" onchange="updateItem(${idx}, 'spent', this.value)">
+        </td>
+        <td>
+          <input type="number" step="any" 
+                 class="${isOverridden ? 'override-active' : ''}"
+                 value="${isOverridden ? item.override : ''}" 
+                 placeholder="${displaySavedPlaceholder}" 
+                 title="${isOverridden ? 'Manual override active. Delete text to revert to auto-calculated savings.' : 'Auto calculated. Type here to force override.'}"
+                 onchange="updateItem(${idx}, 'override', this.value)">
+        </td>
+        <td class="actions-cell">
+          <button class="btn-danger" style="padding: 2px 6px;" onclick="deleteItem(${idx})">&times;</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderBonusTable() {
+    const tbody = document.getElementById('bonus-body');
+    tbody.innerHTML = '';
+
+    state.bonuses.forEach((bonus, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <input type="text" value="${escapeHtml(bonus.name)}" onchange="updateBonus(${idx}, 'name', this.value)">
+        </td>
+        <td>
+          <input type="number" step="any" value="${bonus.amount \vert{}\vert{} ''}" placeholder="0" onchange="updateBonus(${idx}, 'amount', this.value)">
+        </td>
+        <td class="actions-cell">
+          <button class="btn-danger" style="padding: 2px 6px;" onclick="deleteBonus(${idx})">&times;</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function calculateAndRenderDashboard() {
+    let totalBaseBudget = 0;
+    let totalSpent = 0;
+    let totalSaved = 0;
+
+    state.items.forEach(item => {
+      const budget = parseFloat(item.budget) || 0;
+      const spent = parseFloat(item.spent) || 0;
+      
+      totalBaseBudget += budget;
+      totalSpent += spent;
+
+      if (item.override !== null && item.override !== "") {
+        totalSaved += parseFloat(item.override) || 0;
+      } else {
+        totalSaved += (budget - spent);
+      }
+    });
+
+    let totalBonus = 0;
+    state.bonuses.forEach(b => {
+      totalBonus += parseFloat(b.amount) || 0;
+    });
+
+    // Formula: Remaining to spend = Starting budget + bonus income - actual spending
+    const remainingToSpend = totalBaseBudget + totalBonus - totalSpent;
+
+    document.getElementById('dash-base').innerText = fmt(totalBaseBudget);
+    document.getElementById('dash-bonus').innerText = fmt(totalBonus);
+    document.getElementById('dash-spent').innerText = fmt(totalSpent);
+    document.getElementById('dash-saved').innerText = fmt(totalSaved);
+    document.getElementById('dash-remaining').innerText = fmt(remainingToSpend);
+  }
+
+  // Data updates
+  function updateItem(idx, field, val) {
+    if (field === 'name') {
+      state.items[idx].name = val;
+    } else if (field === 'override') {
+      state.items[idx].override = val === "" ? null : parseFloat(val);
+      renderBudgetTable(); // Re-render to show/hide placeholder styles
+    } else {
+      state.items[idx][field] = parseFloat(val) || 0;
+      renderBudgetTable(); // Re-render to update the calculated placeholders
+    }
+    save();
+  }
+
+  function updateBonus(idx, field, val) {
+    if (field === 'name') {
+      state.bonuses[idx].name = val;
+    } else {
+      state.bonuses[idx].amount = parseFloat(val) || 0;
+    }
+    save();
+  }
+
+  function addItem() {
+    state.items.push({ id: Date.now(), name: "New Expense", budget: 0, spent: 0, override: null });
+    render();
+    save();
+  }
+
+  function deleteItem(idx) {
+    state.items.splice(idx, 1);
+    render();
+    save();
+  }
+
+  function addBonus() {
+    state.bonuses.push({ id: Date.now(), name: "Bonus Income / Gift Card", amount: 0 });
+    render();
+    save();
+  }
+
+  function deleteBonus(idx) {
+    state.bonuses.splice(idx, 1);
+    render();
+    save();
+  }
+
+  function resetToDefault() {
+    if (confirm("Are you sure you want to reset back to the original budget list? All modifications will be overwritten.")) {
+      state = { items: JSON.parse(JSON.stringify(defaultItems)), bonuses: [] };
+      render();
+      save();
+    }
+  }
+
+  // JSON Import & Export
+  function exportJSON() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `disney_budget_backup_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  function importJSON(event) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        if (importedData.items && Array.isArray(importedData.items)) {
+          state = importedData;
+          if(!state.bonuses) state.bonuses = [];
+          render();
+          save();
+          alert("Budget data imported successfully!");
+        } else {
+          alert("Invalid file format.");
+        }
+      } catch (err) {
+        alert("Error parsing JSON file.");
+      }
+    };
+    reader.readAsText(event.target.files[0]);
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // Init on load
+  window.onload = init;
+</script>
+</body>
+</html>

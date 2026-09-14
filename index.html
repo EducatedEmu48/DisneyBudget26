@@ -25,7 +25,7 @@
     }
 
     .container {
-      max-width: 950px;
+      max-width: 980px;
       margin: 0 auto;
     }
 
@@ -149,6 +149,10 @@
       font-weight: bold;
     }
 
+    .pending-row {
+      background-color: #fff8e1;
+    }
+
     .actions-cell {
       text-align: center;
       width: 40px;
@@ -224,9 +228,10 @@
       <thead>
         <tr>
           <th>Activity / Expense Item</th>
-          <th style="width: 110px;">Budget Target</th>
-          <th style="width: 110px;">Actual Spent</th>
-          <th style="width: 120px;">Saved (Override)</th>
+          <th style="width: 100px;">Budget Target</th>
+          <th style="width: 100px;">Actual Spent</th>
+          <th style="width: 70px; text-align: center;">Pending?</th>
+          <th style="width: 110px;">Saved (Override)</th>
           <th style="width: 30px;"></th>
         </tr>
       </thead>
@@ -276,19 +281,19 @@
 
 <script>
   const defaultItems = [
-    { id: 1, name: "Southwest Flight", budget: 56, spent: 0, override: null, isFlex: false },
-    { id: 2, name: "Reagan Parking", budget: 175, spent: 0, override: null, isFlex: false },
-    { id: 3, name: "Uber to Disney", budget: 52, spent: 0, override: null, isFlex: false },
-    { id: 4, name: "Disney Package (Hotel + Tickets)", budget: 4265, spent: 0, override: null, isFlex: false },
-    { id: 5, name: "Disney Dining Package", budget: 605, spent: 0, override: null, isFlex: false },
-    { id: 6, name: "Olga Cantina", budget: 50, spent: 0, override: null, isFlex: false },
-    { id: 7, name: "Topolinos", budget: 260, spent: 0, override: null, isFlex: false },
-    { id: 8, name: "Fast Passes", budget: 500, spent: 0, override: null, isFlex: false },
-    { id: 9, name: "Kids Souvenirs", budget: 300, spent: 0, override: null, isFlex: false },
-    { id: 10, name: "Adult Souvenirs", budget: 200, spent: 0, override: null, isFlex: false },
-    { id: 11, name: "Tipping ($15 bags x2, $20 nights)", budget: 55, spent: 0, override: null, isFlex: false },
-    { id: 12, name: "Uber to Airport", budget: 32, spent: 0, override: null, isFlex: false },
-    { id: 13, name: "Flex / Misc / Prep (Ponchos, Fans, Travel Food)", budget: 350, spent: 0, override: null, isFlex: true }
+    { id: 1, name: "Southwest Flight", budget: 56, spent: 0, override: null, isFlex: false, pending: false },
+    { id: 2, name: "Reagan Parking", budget: 175, spent: 0, override: null, isFlex: false, pending: false },
+    { id: 3, name: "Uber to Disney", budget: 52, spent: 0, override: null, isFlex: false, pending: true },
+    { id: 4, name: "Disney Package (Hotel + Tickets)", budget: 4265, spent: 0, override: null, isFlex: false, pending: false },
+    { id: 5, name: "Disney Dining Package", budget: 605, spent: 0, override: null, isFlex: false, pending: false },
+    { id: 6, name: "Olga Cantina", budget: 50, spent: 0, override: null, isFlex: false, pending: false },
+    { id: 7, name: "Topolinos", budget: 260, spent: 0, override: null, isFlex: false, pending: false },
+    { id: 8, name: "Fast Passes", budget: 500, spent: 0, override: null, isFlex: false, pending: false },
+    { id: 9, name: "Kids Souvenirs", budget: 300, spent: 0, override: null, isFlex: false, pending: false },
+    { id: 10, name: "Adult Souvenirs", budget: 200, spent: 0, override: null, isFlex: false, pending: false },
+    { id: 11, name: "Tipping ($15 bags x2, $20 nights)", budget: 55, spent: 0, override: null, isFlex: false, pending: false },
+    { id: 12, name: "Uber to Airport", budget: 32, spent: 0, override: null, isFlex: false, pending: true },
+    { id: 13, name: "Flex / Misc / Prep (Ponchos, Fans, Travel Food)", budget: 350, spent: 0, override: null, isFlex: true, pending: false }
   ];
 
   let state = { items: [], gifts: [], flexTx: [] };
@@ -298,11 +303,14 @@
   }
 
   function init() {
-    const saved = localStorage.getItem('disney_budget_v4');
+    const saved = localStorage.getItem('disney_budget_v5');
     if (saved) {
       try {
         state = JSON.parse(saved);
         if (!state.flexTx) state.flexTx = [];
+        state.items.forEach(item => {
+          if (typeof item.pending === 'undefined') item.pending = false;
+        });
       } catch (e) {
         state = { items: JSON.parse(JSON.stringify(defaultItems)), gifts: [], flexTx: [] };
       }
@@ -314,7 +322,7 @@
   }
 
   function save() {
-    localStorage.setItem('disney_budget_v4', JSON.stringify(state));
+    localStorage.setItem('disney_budget_v5', JSON.stringify(state));
     calculateAndRenderDashboard();
   }
 
@@ -342,6 +350,9 @@
       const calcSaved = item.budget - item.spent;
       const isOverridden = item.override !== null && item.override !== "";
       const isFlexRow = item.isFlex || item.name.toLowerCase().includes('flex');
+      const isPending = item.pending && !isFlexRow && (!item.spent || item.spent === 0);
+
+      if (isPending) tr.classList.add('pending-row');
 
       tr.innerHTML = `
         <td>
@@ -356,6 +367,9 @@
                  placeholder="0" 
                  ${isFlexRow ? 'readonly class="input-item read-only-input" title="Auto-calculated from Flex Pot Purchases below"' : 'class="input-item"'}
                  data-idx="${idx}" data-field="spent">
+        </td>
+        <td style="text-align: center;">
+          ${isFlexRow ? '' : `<input type="checkbox" ${item.pending ? 'checked' : ''} data-idx="${idx}" class="chk-pending" title="Pre-flag as upcoming future expense (excludes from flex buffer until actual spent is entered)">`}
         </td>
         <td>
           <input type="number" step="any" 
@@ -387,6 +401,15 @@
           state.items[idx][field] = parseFloat(val) || 0;
           renderBudgetTable();
         }
+        save();
+      });
+    });
+
+    document.querySelectorAll('.chk-pending').forEach(chk => {
+      chk.addEventListener('change', (e) => {
+        const idx = e.target.dataset.idx;
+        state.items[idx].pending = e.target.checked;
+        renderBudgetTable();
         save();
       });
     });
@@ -500,6 +523,7 @@
     let totalDiscountSavings = 0;
     let flexBudget = 0;
     let flexSpent = 0;
+    let reservedPendingAmount = 0;
 
     state.items.forEach(item => {
       const budget = parseFloat(item.budget) || 0;
@@ -514,10 +538,15 @@
         flexSpent += spent;
       }
 
-      // Calculate discount savings (excluding unspent flex pot from discount total)
+      // If item is pre-flagged as pending AND has 0 actual spent entered, hold budget back from flex buffer
+      if (item.pending && !isFlex && spent === 0) {
+        reservedPendingAmount += budget;
+      }
+
+      // Calculate realized discount savings (manual override takes top priority)
       if (item.override !== null && item.override !== "") {
         totalDiscountSavings += parseFloat(item.override) || 0;
-      } else if (!isFlex) {
+      } else if (!isFlex && spent > 0) {
         totalDiscountSavings += Math.max(0, budget - spent);
       }
     });
@@ -529,16 +558,16 @@
 
     const remainingToSpend = totalBaseBudget + totalGifts - totalSpent;
 
-    // Corrected Flex Buffer Formula: (Remaining Unspent Flex Pot) + Cash Gifts + Realized Discount Savings
+    // Flex Buffer calculation respects reserved pending expenses
     const remainingFlexPot = flexBudget - flexSpent;
-    const availableFlexBuffer = remainingFlexPot + totalGifts + totalDiscountSavings;
+    const availableFlexBuffer = remainingFlexPot + totalGifts + totalDiscountSavings - reservedPendingAmount;
 
     document.getElementById('dash-base').innerText = fmt(totalBaseBudget);
     document.getElementById('dash-gifts').innerText = fmt(totalGifts);
     document.getElementById('dash-spent').innerText = fmt(totalSpent);
     document.getElementById('dash-saved').innerText = fmt(totalDiscountSavings);
     document.getElementById('dash-remaining').innerText = fmt(remainingToSpend);
-    document.getElementById('dash-flex-buffer').innerText = fmt(availableFlexBuffer);
+    document.getElementById('dash-flex-buffer').innerText = fmt(Math.max(0, availableFlexBuffer));
   }
 
   function escapeHtml(str) {
@@ -568,7 +597,7 @@
   });
 
   document.getElementById('btn-add-item').addEventListener('click', () => {
-    state.items.push({ id: Date.now(), name: "New Expense", budget: 0, spent: 0, override: null, isFlex: false });
+    state.items.push({ id: Date.now(), name: "New Expense", budget: 0, spent: 0, override: null, isFlex: false, pending: false });
     render();
     save();
   });
@@ -581,7 +610,7 @@
 
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (confirm("Reset to default Disney items?")) {
-      localStorage.removeItem('disney_budget_v4');
+      localStorage.removeItem('disney_budget_v5');
       state = { items: JSON.parse(JSON.stringify(defaultItems)), gifts: [], flexTx: [] };
       syncFlexSpent();
       render();
@@ -612,6 +641,9 @@
           state = importedData;
           if (!state.gifts) state.gifts = [];
           if (!state.flexTx) state.flexTx = [];
+          state.items.forEach(item => {
+            if (typeof item.pending === 'undefined') item.pending = false;
+          });
           syncFlexSpent();
           render();
           save();

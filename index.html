@@ -16,7 +16,7 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
       margin: 0;
@@ -34,7 +34,6 @@
       font-size: 1.5rem;
     }
 
-    /* Summary Dashboard */
     .dashboard {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -66,7 +65,6 @@
     .text-warning { color: var(--warning); }
     .text-primary { color: var(--primary); }
 
-    /* Controls Bar */
     .controls {
       display: flex;
       gap: 8px;
@@ -89,7 +87,6 @@
     button.btn-secondary { background-color: #757575; }
     button.btn-danger { background-color: #d32f2f; }
 
-    /* Tables */
     .table-container {
       background: var(--card-bg);
       border-radius: 8px;
@@ -138,12 +135,6 @@
       text-align: center;
       width: 40px;
     }
-
-    /* Mobile Responsive tweaks */
-    @media (max-width: 600px) {
-      th, td { padding: 6px 4px; }
-      .hide-mobile { display: none; }
-    }
   </style>
 </head>
 <body>
@@ -151,7 +142,6 @@
 <div class="container">
   <h1>Disney Budget & Savings Tracker</h1>
 
-  <!-- Summary Cards -->
   <div class="dashboard">
     <div class="card">
       <div class="title">Base Budget</div>
@@ -175,21 +165,19 @@
     </div>
   </div>
 
-  <!-- Global Action Buttons -->
   <div class="controls">
     <div>
-      <button onclick="addItem()">+ Add Item</button>
-      <button onclick="addBonus()">+ Add Bonus Income</button>
+      <button id="btn-add-item">+ Add Item</button>
+      <button id="btn-add-bonus">+ Add Bonus Income</button>
     </div>
     <div>
-      <button class="btn-secondary" onclick="exportJSON()">Export JSON</button>
-      <button class="btn-secondary" onclick="document.getElementById('importFile').click()">Import JSON</button>
-      <input type="file" id="importFile" style="display:none" onchange="importJSON(event)" accept=".json">
-      <button class="btn-danger" onclick="resetToDefault()">Reset</button>
+      <button id="btn-export" class="btn-secondary">Export JSON</button>
+      <button id="btn-import-trigger" class="btn-secondary">Import JSON</button>
+      <input type="file" id="importFile" style="display:none" accept=".json">
+      <button id="btn-reset" class="btn-danger">Reset Defaults</button>
     </div>
   </div>
 
-  <!-- Main Budget Table -->
   <div class="table-container">
     <table>
       <thead>
@@ -201,13 +189,10 @@
           <th style="width: 30px;"></th>
         </tr>
       </thead>
-      <tbody id="budget-body">
-        <!-- Rows rendered via JS -->
-      </tbody>
+      <tbody id="budget-body"></tbody>
     </table>
   </div>
 
-  <!-- Bonus Income Table -->
   <h3>Bonus Income / Extra Funds</h3>
   <div class="table-container">
     <table>
@@ -218,15 +203,12 @@
           <th style="width: 30px;"></th>
         </tr>
       </thead>
-      <tbody id="bonus-body">
-        <!-- Rows rendered via JS -->
-      </tbody>
+      <tbody id="bonus-body"></tbody>
     </table>
   </div>
 </div>
 
 <script>
-  // Initial default dataset parsed from your raw data
   const defaultItems = [
     { id: 1, name: "Southwest Flight", budget: 56, spent: 0, override: null },
     { id: 2, name: "Reagan Parking", budget: 175, spent: 0, override: null },
@@ -243,35 +225,28 @@
     { id: 13, name: "Miscellaneous Extra", budget: 200, spent: 0, override: null }
   ];
 
-  const defaultBonuses = [];
+  let state = { items: [], bonuses: [] };
 
-  let state = {
-    items: [],
-    bonuses: []
-  };
-
-  // Format numbers to USD
   function fmt(num) {
     return '$' + Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
 
-  // Load from local storage or reset
   function init() {
-    const saved = localStorage.getItem('disney_budget_data');
+    const saved = localStorage.getItem('disney_budget_v2');
     if (saved) {
       try {
         state = JSON.parse(saved);
       } catch (e) {
-        state = { items: defaultItems, bonuses: defaultBonuses };
+        state = { items: JSON.parse(JSON.stringify(defaultItems)), bonuses: [] };
       }
     } else {
-      state = { items: defaultItems, bonuses: defaultBonuses };
+      state = { items: JSON.parse(JSON.stringify(defaultItems)), bonuses: [] };
     }
     render();
   }
 
   function save() {
-    localStorage.setItem('disney_budget_data', JSON.stringify(state));
+    localStorage.setItem('disney_budget_v2', JSON.stringify(state));
     calculateAndRenderDashboard();
   }
 
@@ -287,34 +262,59 @@
 
     state.items.forEach((item, idx) => {
       const tr = document.createElement('tr');
-      
       const calcSaved = item.budget - item.spent;
       const isOverridden = item.override !== null && item.override !== "";
-      const displaySavedPlaceholder = calcSaved;
 
       tr.innerHTML = `
         <td>
-          <input type="text" value="${escapeHtml(item.name)}" onchange="updateItem(${idx}, 'name', this.value)">
+          <input type="text" value="${escapeHtml(item.name)}" data-idx="${idx}" data-field="name" class="input-item">
         </td>
         <td>
-          <input type="number" step="any" value="${item.budget}" onchange="updateItem(${idx}, 'budget', this.value)">
+          <input type="number" step="any" value="${item.budget}" data-idx="${idx}" data-field="budget" class="input-item">
         </td>
         <td>
-          <input type="number" step="any" value="${item.spent \vert{}\vert{} ''}" placeholder="0" onchange="updateItem(${idx}, 'spent', this.value)">
+          <input type="number" step="any" value="${item.spent || ''}" placeholder="0" data-idx="${idx}" data-field="spent" class="input-item">
         </td>
         <td>
           <input type="number" step="any" 
-                 class="${isOverridden ? 'override-active' : ''}"
+                 class="input-item ${isOverridden ? 'override-active' : ''}"
                  value="${isOverridden ? item.override : ''}" 
-                 placeholder="${displaySavedPlaceholder}" 
-                 title="${isOverridden ? 'Manual override active. Delete text to revert to auto-calculated savings.' : 'Auto calculated. Type here to force override.'}"
-                 onchange="updateItem(${idx}, 'override', this.value)">
+                 placeholder="${calcSaved}" 
+                 data-idx="${idx}" data-field="override">
         </td>
         <td class="actions-cell">
-          <button class="btn-danger" style="padding: 2px 6px;" onclick="deleteItem(${idx})">&times;</button>
+          <button class="btn-danger btn-delete-item" data-idx="${idx}" style="padding: 2px 6px;">&times;</button>
         </td>
       `;
       tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.input-item').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const idx = e.target.dataset.idx;
+        const field = e.target.dataset.field;
+        const val = e.target.value;
+
+        if (field === 'name') {
+          state.items[idx].name = val;
+        } else if (field === 'override') {
+          state.items[idx].override = val === "" ? null : parseFloat(val);
+          renderBudgetTable();
+        } else {
+          state.items[idx][field] = parseFloat(val) || 0;
+          renderBudgetTable();
+        }
+        save();
+      });
+    });
+
+    document.querySelectorAll('.btn-delete-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = e.target.dataset.idx;
+        state.items.splice(idx, 1);
+        render();
+        save();
+      });
     });
   }
 
@@ -326,16 +326,40 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
-          <input type="text" value="${escapeHtml(bonus.name)}" onchange="updateBonus(${idx}, 'name', this.value)">
+          <input type="text" value="${escapeHtml(bonus.name)}" data-idx="${idx}" data-field="name" class="input-bonus">
         </td>
         <td>
-          <input type="number" step="any" value="${bonus.amount \vert{}\vert{} ''}" placeholder="0" onchange="updateBonus(${idx}, 'amount', this.value)">
+          <input type="number" step="any" value="${bonus.amount || ''}" placeholder="0" data-idx="${idx}" data-field="amount" class="input-bonus">
         </td>
         <td class="actions-cell">
-          <button class="btn-danger" style="padding: 2px 6px;" onclick="deleteBonus(${idx})">&times;</button>
+          <button class="btn-danger btn-delete-bonus" data-idx="${idx}" style="padding: 2px 6px;">&times;</button>
         </td>
       `;
       tbody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.input-bonus').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const idx = e.target.dataset.idx;
+        const field = e.target.dataset.field;
+        const val = e.target.value;
+
+        if (field === 'name') {
+          state.bonuses[idx].name = val;
+        } else {
+          state.bonuses[idx].amount = parseFloat(val) || 0;
+        }
+        save();
+      });
+    });
+
+    document.querySelectorAll('.btn-delete-bonus').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = e.target.dataset.idx;
+        state.bonuses.splice(idx, 1);
+        render();
+        save();
+      });
     });
   }
 
@@ -363,7 +387,6 @@
       totalBonus += parseFloat(b.amount) || 0;
     });
 
-    // Formula: Remaining to spend = Starting budget + bonus income - actual spending
     const remainingToSpend = totalBaseBudget + totalBonus - totalSpent;
 
     document.getElementById('dash-base').innerText = fmt(totalBaseBudget);
@@ -373,99 +396,67 @@
     document.getElementById('dash-remaining').innerText = fmt(remainingToSpend);
   }
 
-  // Data updates
-  function updateItem(idx, field, val) {
-    if (field === 'name') {
-      state.items[idx].name = val;
-    } else if (field === 'override') {
-      state.items[idx].override = val === "" ? null : parseFloat(val);
-      renderBudgetTable(); // Re-render to show/hide placeholder styles
-    } else {
-      state.items[idx][field] = parseFloat(val) || 0;
-      renderBudgetTable(); // Re-render to update the calculated placeholders
-    }
-    save();
+  function escapeHtml(str) {
+    return String(str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  function updateBonus(idx, field, val) {
-    if (field === 'name') {
-      state.bonuses[idx].name = val;
-    } else {
-      state.bonuses[idx].amount = parseFloat(val) || 0;
-    }
-    save();
-  }
-
-  function addItem() {
+  // Bind main buttons
+  document.getElementById('btn-add-item').addEventListener('click', () => {
     state.items.push({ id: Date.now(), name: "New Expense", budget: 0, spent: 0, override: null });
     render();
     save();
-  }
+  });
 
-  function deleteItem(idx) {
-    state.items.splice(idx, 1);
+  document.getElementById('btn-add-bonus').addEventListener('click', () => {
+    state.bonuses.push({ id: Date.now(), name: "Bonus / Gift Card", amount: 0 });
     render();
     save();
-  }
+  });
 
-  function addBonus() {
-    state.bonuses.push({ id: Date.now(), name: "Bonus Income / Gift Card", amount: 0 });
-    render();
-    save();
-  }
-
-  function deleteBonus(idx) {
-    state.bonuses.splice(idx, 1);
-    render();
-    save();
-  }
-
-  function resetToDefault() {
-    if (confirm("Are you sure you want to reset back to the original budget list? All modifications will be overwritten.")) {
+  document.getElementById('btn-reset').addEventListener('click', () => {
+    if (confirm("Reset to default Disney items?")) {
+      localStorage.removeItem('disney_budget_v2');
       state = { items: JSON.parse(JSON.stringify(defaultItems)), bonuses: [] };
       render();
       save();
     }
-  }
+  });
 
-  // JSON Import & Export
-  function exportJSON() {
+  document.getElementById('btn-export').addEventListener('click', () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `disney_budget_backup_${new Date().toISOString().slice(0,10)}.json`);
+    downloadAnchor.setAttribute("download", `disney_budget_${new Date().toISOString().slice(0,10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-  }
+  });
 
-  function importJSON(event) {
+  document.getElementById('btn-import-trigger').addEventListener('click', () => {
+    document.getElementById('importFile').click();
+  });
+
+  document.getElementById('importFile').addEventListener('change', (event) => {
     const reader = new FileReader();
     reader.onload = function(e) {
       try {
         const importedData = JSON.parse(e.target.result);
         if (importedData.items && Array.isArray(importedData.items)) {
           state = importedData;
-          if(!state.bonuses) state.bonuses = [];
+          if (!state.bonuses) state.bonuses = [];
           render();
           save();
-          alert("Budget data imported successfully!");
         } else {
-          alert("Invalid file format.");
+          alert("Invalid JSON format.");
         }
       } catch (err) {
         alert("Error parsing JSON file.");
       }
     };
     reader.readAsText(event.target.files[0]);
-  }
+  });
 
-  function escapeHtml(str) {
-    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
-
-  // Init on load
-  window.onload = init;
+  window.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>

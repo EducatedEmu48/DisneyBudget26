@@ -12,6 +12,7 @@
       --primary: #1e88e5;
       --success: #2e7d32;
       --warning: #f57c00;
+      --purple: #7b1fa2;
       --border: #e0e0e0;
     }
 
@@ -24,7 +25,7 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 950px;
       margin: 0 auto;
     }
 
@@ -34,6 +35,12 @@
       font-size: 1.5rem;
     }
 
+    h3 {
+      margin-top: 24px;
+      margin-bottom: 8px;
+    }
+
+    /* Dashboard Layout */
     .dashboard {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -49,22 +56,30 @@
       text-align: center;
     }
 
+    .card.highlight {
+      border: 2px solid var(--purple);
+      background-color: #f3e5f5;
+    }
+
     .card .title {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       text-transform: uppercase;
       color: #666;
       margin-bottom: 4px;
+      font-weight: 600;
     }
 
     .card .value {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: bold;
     }
 
     .text-success { color: var(--success); }
     .text-warning { color: var(--warning); }
     .text-primary { color: var(--primary); }
+    .text-purple { color: var(--purple); }
 
+    /* Controls Bar */
     .controls {
       display: flex;
       gap: 8px;
@@ -87,12 +102,13 @@
     button.btn-secondary { background-color: #757575; }
     button.btn-danger { background-color: #d32f2f; }
 
+    /* Tables */
     .table-container {
       background: var(--card-bg);
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
       overflow-x: auto;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     table {
@@ -135,40 +151,53 @@
       text-align: center;
       width: 40px;
     }
+
+    .note-text {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: -4px;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>Disney Budget & Savings Tracker</h1>
+  <h1>Disney Budget & Flex Tracker</h1>
 
+  <!-- Dashboard Overview -->
   <div class="dashboard">
     <div class="card">
-      <div class="title">Base Budget</div>
+      <div class="title">Total Budget</div>
       <div class="value" id="dash-base">$0</div>
     </div>
     <div class="card">
-      <div class="title">Bonus Income</div>
-      <div class="value text-primary" id="dash-bonus">$0</div>
+      <div class="title">Cash Gifts</div>
+      <div class="value text-primary" id="dash-gifts">$0</div>
     </div>
     <div class="card">
-      <div class="title">Actual Spent</div>
+      <div class="title">Total Spent</div>
       <div class="value" id="dash-spent">$0</div>
     </div>
     <div class="card">
-      <div class="title">Total Saved</div>
+      <div class="title">Discount Savings</div>
       <div class="value text-success" id="dash-saved">$0</div>
     </div>
     <div class="card">
-      <div class="title">Left To Spend</div>
+      <div class="title">Overall Left</div>
       <div class="value text-warning" id="dash-remaining">$0</div>
+    </div>
+    <div class="card highlight">
+      <div class="title">Available Flex Buffer</div>
+      <div class="value text-purple" id="dash-flex-buffer">$0</div>
     </div>
   </div>
 
+  <!-- Action Controls -->
   <div class="controls">
     <div>
-      <button id="btn-add-item">+ Add Item</button>
-      <button id="btn-add-bonus">+ Add Bonus Income</button>
+      <button id="btn-add-item">+ Add Expense Item</button>
+      <button id="btn-add-gift">+ Add Cash Gift</button>
     </div>
     <div>
       <button id="btn-export" class="btn-secondary">Export JSON</button>
@@ -178,14 +207,15 @@
     </div>
   </div>
 
+  <!-- Primary Budget Items -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
-          <th>Activity Item</th>
-          <th style="width: 100px;">Budget</th>
-          <th style="width: 100px;">Actual Spent</th>
-          <th style="width: 100px;">Saved (Override)</th>
+          <th>Activity / Expense Item</th>
+          <th style="width: 110px;">Budget Target</th>
+          <th style="width: 110px;">Actual Spent</th>
+          <th style="width: 120px;">Saved (Override)</th>
           <th style="width: 30px;"></th>
         </tr>
       </thead>
@@ -193,66 +223,69 @@
     </table>
   </div>
 
-  <h3>Bonus Income / Extra Funds</h3>
+  <!-- Cash Gifts Section -->
+  <h3>Cash Gifts & External Support</h3>
+  <div class="note-text">Money from Grandma, gifts, or unallocated extra funds that increase your spending capacity.</div>
   <div class="table-container">
     <table>
       <thead>
         <tr>
-          <th>Source / Description</th>
-          <th style="width: 120px;">Amount</th>
+          <th>Gift Source / Notes</th>
+          <th style="width: 140px;">Amount</th>
           <th style="width: 30px;"></th>
         </tr>
       </thead>
-      <tbody id="bonus-body"></tbody>
+      <tbody id="gifts-body"></tbody>
     </table>
   </div>
 </div>
 
 <script>
+  // Initial pre-loaded data with updated line items
   const defaultItems = [
-    { id: 1, name: "Southwest Flight", budget: 56, spent: 0, override: null },
-    { id: 2, name: "Reagan Parking", budget: 175, spent: 0, override: null },
-    { id: 3, name: "Uber to Disney", budget: 52, spent: 0, override: null },
-    { id: 4, name: "Disney Package (Hotel + Tickets)", budget: 4265, spent: 0, override: null },
-    { id: 5, name: "Disney Dining Package", budget: 605, spent: 0, override: null },
-    { id: 6, name: "Olga Cantina", budget: 50, spent: 0, override: null },
-    { id: 7, name: "Topolinos", budget: 260, spent: 0, override: null },
-    { id: 8, name: "Fast Passes", budget: 500, spent: 0, override: null },
-    { id: 9, name: "Souvenirs", budget: 500, spent: 0, override: null },
-    { id: 10, name: "Tipping ($15 bags x2, $20 nights)", budget: 55, spent: 0, override: null },
-    { id: 11, name: "Travel Food", budget: 150, spent: 0, override: null },
-    { id: 12, name: "Uber to Airport", budget: 32, spent: 0, override: null },
-    { id: 13, name: "Miscellaneous Extra", budget: 200, spent: 0, override: null }
+    { id: 1, name: "Southwest Flight", budget: 56, spent: 0, override: null, isFlex: false },
+    { id: 2, name: "Reagan Parking", budget: 175, spent: 0, override: null, isFlex: false },
+    { id: 3, name: "Uber to Disney", budget: 52, spent: 0, override: null, isFlex: false },
+    { id: 4, name: "Disney Package (Hotel + Tickets)", budget: 4265, spent: 0, override: null, isFlex: false },
+    { id: 5, name: "Disney Dining Package", budget: 605, spent: 0, override: null, isFlex: false },
+    { id: 6, name: "Olga Cantina", budget: 50, spent: 0, override: null, isFlex: false },
+    { id: 7, name: "Topolinos", budget: 260, spent: 0, override: null, isFlex: false },
+    { id: 8, name: "Fast Passes", budget: 500, spent: 0, override: null, isFlex: false },
+    { id: 9, name: "Kids Souvenirs", budget: 300, spent: 0, override: null, isFlex: false },
+    { id: 10, name: "Adult Souvenirs", budget: 200, spent: 0, override: null, isFlex: false },
+    { id: 11, name: "Tipping ($15 bags x2, $20 nights)", budget: 55, spent: 0, override: null, isFlex: false },
+    { id: 12, name: "Uber to Airport", budget: 32, spent: 0, override: null, isFlex: false },
+    { id: 13, name: "Flex / Misc / Prep (Ponchos, Fans, Travel Food)", budget: 350, spent: 0, override: null, isFlex: true }
   ];
 
-  let state = { items: [], bonuses: [] };
+  let state = { items: [], gifts: [] };
 
   function fmt(num) {
     return '$' + Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
 
   function init() {
-    const saved = localStorage.getItem('disney_budget_v2');
+    const saved = localStorage.getItem('disney_budget_v3');
     if (saved) {
       try {
         state = JSON.parse(saved);
       } catch (e) {
-        state = { items: JSON.parse(JSON.stringify(defaultItems)), bonuses: [] };
+        state = { items: JSON.parse(JSON.stringify(defaultItems)), gifts: [] };
       }
     } else {
-      state = { items: JSON.parse(JSON.stringify(defaultItems)), bonuses: [] };
+      state = { items: JSON.parse(JSON.stringify(defaultItems)), gifts: [] };
     }
     render();
   }
 
   function save() {
-    localStorage.setItem('disney_budget_v2', JSON.stringify(state));
+    localStorage.setItem('disney_budget_v3', JSON.stringify(state));
     calculateAndRenderDashboard();
   }
 
   function render() {
     renderBudgetTable();
-    renderBonusTable();
+    renderGiftsTable();
     calculateAndRenderDashboard();
   }
 
@@ -280,6 +313,7 @@
                  class="input-item ${isOverridden ? 'override-active' : ''}"
                  value="${isOverridden ? item.override : ''}" 
                  placeholder="${calcSaved}" 
+                 title="Override calculated savings"
                  data-idx="${idx}" data-field="override">
         </td>
         <td class="actions-cell">
@@ -318,45 +352,45 @@
     });
   }
 
-  function renderBonusTable() {
-    const tbody = document.getElementById('bonus-body');
+  function renderGiftsTable() {
+    const tbody = document.getElementById('gifts-body');
     tbody.innerHTML = '';
 
-    state.bonuses.forEach((bonus, idx) => {
+    state.gifts.forEach((gift, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>
-          <input type="text" value="${escapeHtml(bonus.name)}" data-idx="${idx}" data-field="name" class="input-bonus">
+          <input type="text" value="${escapeHtml(gift.name)}" data-idx="${idx}" data-field="name" class="input-gift">
         </td>
         <td>
-          <input type="number" step="any" value="${bonus.amount || ''}" placeholder="0" data-idx="${idx}" data-field="amount" class="input-bonus">
+          <input type="number" step="any" value="${gift.amount || ''}" placeholder="0" data-idx="${idx}" data-field="amount" class="input-gift">
         </td>
         <td class="actions-cell">
-          <button class="btn-danger btn-delete-bonus" data-idx="${idx}" style="padding: 2px 6px;">&times;</button>
+          <button class="btn-danger btn-delete-gift" data-idx="${idx}" style="padding: 2px 6px;">&times;</button>
         </td>
       `;
       tbody.appendChild(tr);
     });
 
-    document.querySelectorAll('.input-bonus').forEach(input => {
+    document.querySelectorAll('.input-gift').forEach(input => {
       input.addEventListener('change', (e) => {
         const idx = e.target.dataset.idx;
         const field = e.target.dataset.field;
         const val = e.target.value;
 
         if (field === 'name') {
-          state.bonuses[idx].name = val;
+          state.gifts[idx].name = val;
         } else {
-          state.bonuses[idx].amount = parseFloat(val) || 0;
+          state.gifts[idx].amount = parseFloat(val) || 0;
         }
         save();
       });
     });
 
-    document.querySelectorAll('.btn-delete-bonus').forEach(btn => {
+    document.querySelectorAll('.btn-delete-gift').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const idx = e.target.dataset.idx;
-        state.bonuses.splice(idx, 1);
+        state.gifts.splice(idx, 1);
         render();
         save();
       });
@@ -367,6 +401,8 @@
     let totalBaseBudget = 0;
     let totalSpent = 0;
     let totalSaved = 0;
+    let flexBudget = 0;
+    let flexSpent = 0;
 
     state.items.forEach(item => {
       const budget = parseFloat(item.budget) || 0;
@@ -375,6 +411,12 @@
       totalBaseBudget += budget;
       totalSpent += spent;
 
+      // Track Flex specific line item
+      if (item.isFlex || item.name.toLowerCase().includes('flex')) {
+        flexBudget += budget;
+        flexSpent += spent;
+      }
+
       if (item.override !== null && item.override !== "") {
         totalSaved += parseFloat(item.override) || 0;
       } else {
@@ -382,41 +424,45 @@
       }
     });
 
-    let totalBonus = 0;
-    state.bonuses.forEach(b => {
-      totalBonus += parseFloat(b.amount) || 0;
+    let totalGifts = 0;
+    state.gifts.forEach(g => {
+      totalGifts += parseFloat(g.amount) || 0;
     });
 
-    const remainingToSpend = totalBaseBudget + totalBonus - totalSpent;
+    const remainingToSpend = totalBaseBudget + totalGifts - totalSpent;
+
+    // Available Flex Buffer = (Base Flex Budget) + (Gifts) + (Discount Savings) - (Flex Spent)
+    const availableFlexBuffer = flexBudget + totalGifts + totalSaved - flexSpent;
 
     document.getElementById('dash-base').innerText = fmt(totalBaseBudget);
-    document.getElementById('dash-bonus').innerText = fmt(totalBonus);
+    document.getElementById('dash-gifts').innerText = fmt(totalGifts);
     document.getElementById('dash-spent').innerText = fmt(totalSpent);
     document.getElementById('dash-saved').innerText = fmt(totalSaved);
     document.getElementById('dash-remaining').innerText = fmt(remainingToSpend);
+    document.getElementById('dash-flex-buffer').innerText = fmt(availableFlexBuffer);
   }
 
   function escapeHtml(str) {
     return String(str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  // Bind main buttons
+  // Event Listeners
   document.getElementById('btn-add-item').addEventListener('click', () => {
-    state.items.push({ id: Date.now(), name: "New Expense", budget: 0, spent: 0, override: null });
+    state.items.push({ id: Date.now(), name: "New Expense", budget: 0, spent: 0, override: null, isFlex: false });
     render();
     save();
   });
 
-  document.getElementById('btn-add-bonus').addEventListener('click', () => {
-    state.bonuses.push({ id: Date.now(), name: "Bonus / Gift Card", amount: 0 });
+  document.getElementById('btn-add-gift').addEventListener('click', () => {
+    state.gifts.push({ id: Date.now(), name: "Grandma's Gift", amount: 0 });
     render();
     save();
   });
 
   document.getElementById('btn-reset').addEventListener('click', () => {
     if (confirm("Reset to default Disney items?")) {
-      localStorage.removeItem('disney_budget_v2');
-      state = { items: JSON.parse(JSON.stringify(defaultItems)), bonuses: [] };
+      localStorage.removeItem('disney_budget_v3');
+      state = { items: JSON.parse(JSON.stringify(defaultItems)), gifts: [] };
       render();
       save();
     }
@@ -443,7 +489,7 @@
         const importedData = JSON.parse(e.target.result);
         if (importedData.items && Array.isArray(importedData.items)) {
           state = importedData;
-          if (!state.bonuses) state.bonuses = [];
+          if (!state.gifts) state.gifts = [];
           render();
           save();
         } else {

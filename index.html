@@ -198,9 +198,9 @@
 
   <!-- Navigation Tabs -->
   <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('tab-live')">Live Spending & Souvenirs</button>
-    <button class="tab-btn" onclick="switchTab('tab-gc')">Gift Card Engine</button>
-    <button class="tab-btn" onclick="switchTab('tab-budget')">Core Trip Budget</button>
+    <button class="tab-btn active" onclick="switchTab(event, 'tab-live')">Live Spending & Souvenirs</button>
+    <button class="tab-btn" onclick="switchTab(event, 'tab-gc')">Gift Card Engine</button>
+    <button class="tab-btn" onclick="switchTab(event, 'tab-budget')">Core Trip Budget</button>
   </div>
 
   <!-- Global Import/Export Bar -->
@@ -458,12 +458,21 @@
     return '$' + Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
 
-  function switchTab(tabId) {
+  function switchTab(evt, tabId) {
+    const e = evt || window.event;
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
-    event.target.classList.add('active');
-    document.getElementById(tabId).classList.add('active');
+    if (e) {
+      const targetBtn = e.currentTarget || e.target;
+      if (targetBtn && targetBtn.classList) {
+        targetBtn.classList.add('active');
+      }
+    }
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) {
+      targetTab.classList.add('active');
+    }
   }
 
   function init() {
@@ -669,93 +678,38 @@
 
   /* --- TAB 3: CORE TRIP BUDGET --- */
   function renderCoreBudget() {
-  // 1. Fixed Expenses Table
-  const tbody = document.getElementById('budget-body');
-  tbody.innerHTML = '';
+    // 1. Fixed Expenses Table
+    const tbody = document.getElementById('budget-body');
+    tbody.innerHTML = '';
 
-  let totalFixedBudget = 0;
-  let totalFixedSpent = 0;
-  let totalPendingReserved = 0; // Track pending commitments
+    let totalFixedBudget = 0;
+    let totalFixedSpent = 0;
+    let totalPendingReserved = 0; // Track pending commitments
 
-  state.items.forEach((item, idx) => {
-    const budget = parseFloat(item.budget) || 0;
-    const spent = parseFloat(item.spent) || 0;
+    state.items.forEach((item, idx) => {
+      const budget = parseFloat(item.budget) || 0;
+      const spent = parseFloat(item.spent) || 0;
 
-    totalFixedBudget += budget;
-    totalFixedSpent += spent;
+      totalFixedBudget += budget;
+      totalFixedSpent += spent;
 
-    // If item is checked pending and hasn't been fully spent, reserve its unspent budget
-    if (item.pending) {
-      totalPendingReserved += Math.max(0, budget - spent);
-    }
+      // If item is checked pending and hasn't been fully spent, reserve its unspent budget
+      if (item.pending) {
+        totalPendingReserved += Math.max(0, budget - spent);
+      }
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input type="text" value="${escapeHtml(item.name)}" onchange="updateItem(${idx}, 'name', this.value)"></td>
-      <td><input type="number" value="${item.budget}" onchange="updateItem(${idx}, 'budget', this.value)"></td>
-      <td><input type="number" value="${item.spent}" onchange="updateItem(${idx}, 'spent', this.value)"></td>
-      <td style="text-align: center;"><input type="checkbox" ${item.pending ? 'checked' : ''} onchange="updateItem(${idx}, 'pending', this.checked)"></td>
-      <td class="actions-cell"><button class="btn-danger" onclick="deleteItem(${idx})" style="padding: 2px 6px;">&times;</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" value="${escapeHtml(item.name)}" onchange="updateItem(${idx}, 'name', this.value)"></td>
+        <td><input type="number" value="${item.budget}" onchange="updateItem(${idx}, 'budget', this.value)"></td>
+        <td><input type="number" value="${item.spent}" onchange="updateItem(${idx}, 'spent', this.value)"></td>
+        <td style="text-align: center;"><input type="checkbox" ${item.pending ? 'checked' : ''} onchange="updateItem(${idx}, 'pending', this.checked)"></td>
+        <td class="actions-cell"><button class="btn-danger" onclick="deleteItem(${idx})" style="padding: 2px 6px;">&times;</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
 
-  // 2. Flex Pots Table
-  const flexTbody = document.getElementById('flex-body');
-  flexTbody.innerHTML = '';
-
-  let totalFlexAllocated = 0;
-  let totalFlexSpent = 0;
-
-  state.flexPots.forEach((pot, idx) => {
-    const allocated = parseFloat(pot.allocated) || 0;
-    const spent = parseFloat(pot.spent) || 0;
-    const available = allocated - spent;
-
-    totalFlexAllocated += allocated;
-    totalFlexSpent += spent;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input type="text" value="${escapeHtml(pot.name)}" onchange="updateFlexPot(${idx}, 'name', this.value)"></td>
-      <td><input type="number" value="${pot.allocated}" onchange="updateFlexPot(${idx}, 'allocated', this.value)"></td>
-      <td><input type="number" value="${pot.spent}" onchange="updateFlexPot(${idx}, 'spent', this.value)"></td>
-      <td style="font-weight: bold;" class="${available >= 0 ? 'text-success' : 'text-warning'}">${fmt(available)}</td>
-      <td class="actions-cell"><button class="btn-danger" onclick="deleteFlexPot(${idx})" style="padding: 2px 6px;">&times;</button></td>
-    `;
-    flexTbody.appendChild(tr);
-  });
-
-  // 3. Cash Gifts Table
-  let totalGifts = state.gifts.reduce((sum, g) => sum + (parseFloat(g.amount) || 0), 0);
-
-  const giftTbody = document.getElementById('gifts-body');
-  giftTbody.innerHTML = '';
-  state.gifts.forEach((g, idx) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input type="text" value="${escapeHtml(g.name)}" onchange="updateGift(${idx}, 'name', this.value)"></td>
-      <td><input type="number" value="${g.amount}" onchange="updateGift(${idx}, 'amount', this.value)"></td>
-      <td class="actions-cell"><button class="btn-danger" onclick="deleteGift(${idx})" style="padding: 2px 6px;">&times;</button></td>
-    `;
-    giftTbody.appendChild(tr);
-  });
-
-  // 4. Core Dashboard Aggregations
-  const totalBaseBudget = totalFixedBudget + totalFlexAllocated;
-  const totalTripSpent = totalFixedSpent + totalFlexSpent;
-  const overallRemaining = (totalBaseBudget + totalGifts) - totalTripSpent;
-  
-  // Flex Buffer = Cash remaining minus reserved funds for pending future items
-  const flexBuffer = overallRemaining - totalPendingReserved;
-
-  document.getElementById('dash-base').innerText = fmt(totalBaseBudget);
-  document.getElementById('dash-gifts').innerText = fmt(totalGifts);
-  document.getElementById('dash-spent').innerText = fmt(totalTripSpent);
-  document.getElementById('dash-remaining').innerText = fmt(overallRemaining);
-  document.getElementById('dash-flex-buffer').innerText = fmt(Math.max(0, flexBuffer));
-}
-
+    // 2. Cash Gifts Table
     let totalGifts = state.gifts.reduce((sum, g) => sum + (parseFloat(g.amount) || 0), 0);
 
     const giftTbody = document.getElementById('gifts-body');
@@ -770,13 +724,19 @@
       giftTbody.appendChild(tr);
     });
 
-    const overallLeft = (totalBase + totalGifts) - totalSpent;
+    // 3. Core Dashboard Aggregations
+    const totalBaseBudget = totalFixedBudget;
+    const totalTripSpent = totalFixedSpent;
+    const overallRemaining = (totalBaseBudget + totalGifts) - totalTripSpent;
+    
+    // Flex Buffer = Cash remaining minus reserved funds for pending future items
+    const flexBuffer = overallRemaining - totalPendingReserved;
 
-    document.getElementById('dash-base').innerText = fmt(totalBase);
+    document.getElementById('dash-base').innerText = fmt(totalBaseBudget);
     document.getElementById('dash-gifts').innerText = fmt(totalGifts);
-    document.getElementById('dash-spent').innerText = fmt(totalSpent);
-    document.getElementById('dash-remaining').innerText = fmt(overallLeft);
-    document.getElementById('dash-flex-buffer').innerText = fmt(Math.max(0, overallLeft));
+    document.getElementById('dash-spent').innerText = fmt(totalTripSpent);
+    document.getElementById('dash-remaining').innerText = fmt(overallRemaining);
+    document.getElementById('dash-flex-buffer').innerText = fmt(Math.max(0, flexBuffer));
   }
 
   function updateItem(idx, field, val) {

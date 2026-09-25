@@ -420,6 +420,39 @@
     items: JSON.parse(JSON.stringify(defaultItems)),
     gifts: []
   };
+  function normalizeState(data) {
+  const normalized = data || {};
+
+  // New features: initialize if importing an older JSON
+  if (!normalized.people) {
+    normalized.people = JSON.parse(JSON.stringify(defaultPeople));
+  }
+
+  if (!normalized.envelopes) {
+    normalized.envelopes = JSON.parse(JSON.stringify(defaultEnvelopes));
+  }
+
+  if (!normalized.gcBatches) {
+    normalized.gcBatches = [
+      { id: 1, label: "Initial Purchased Cards", amount: 300 }
+    ];
+  }
+
+  if (!normalized.spendingLog) {
+    normalized.spendingLog = [];
+  }
+
+  // Original budget data: initialize only if completely absent
+  if (!normalized.items) {
+    normalized.items = JSON.parse(JSON.stringify(defaultItems));
+  }
+
+  if (!normalized.gifts) {
+    normalized.gifts = [];
+  }
+
+  return normalized;
+}
 
   function fmt(num) {
     return '$' + Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -435,26 +468,20 @@
 
   function init() {
     const saved = localStorage.getItem('disney_live_tracker_v1');
-    if (saved) {
-      try {
-        state = JSON.parse(saved);
-        if (!state.people) state.people = JSON.parse(JSON.stringify(defaultPeople));
-        if (!state.envelopes) state.envelopes = JSON.parse(JSON.stringify(defaultEnvelopes));
-        if (!state.gcBatches) state.gcBatches = [];
-        if (!state.spendingLog) state.spendingLog = [];
-        if (!state.items) state.items = JSON.parse(JSON.stringify(defaultItems));
-        if (!state.gifts) state.gifts = [];
-      } catch (e) {
-        console.error("Failed to parse state", e);
+      if (saved) {
+        try {
+          state = normalizeState(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse state", e);
+        }
       }
-    }
-    render();
-  }
-
-  function save() {
-    localStorage.setItem('disney_live_tracker_v1', JSON.stringify(state));
-    render();
-  }
+          render();
+        }
+      
+        function save() {
+          localStorage.setItem('disney_live_tracker_v1', JSON.stringify(state));
+          render();
+        }
 
   function render() {
     renderPeopleCards();
@@ -751,22 +778,30 @@
 
   document.getElementById('importFile').addEventListener('change', (event) => {
     const reader = new FileReader();
+  
     reader.onload = function(e) {
       try {
         const importedData = JSON.parse(e.target.result);
+  
         if (importedData) {
-          state = importedData;
+          state = normalizeState(importedData);
           save();
         }
       } catch (err) {
-        alert("Error parsing JSON file.");
+        console.error(err);
+        alert("Error importing JSON file.");
       }
     };
+  
     reader.readAsText(event.target.files[0]);
   });
 
   function escapeHtml(str) {
-    return String(str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return String(str || '')
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   window.addEventListener('DOMContentLoaded', init);

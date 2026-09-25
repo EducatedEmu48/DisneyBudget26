@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Disney Budget & Flex Tracker</title>
+  <title>Disney Travel & Live Tracker</title>
   <style>
     :root {
       --bg-color: #f4f6f9;
@@ -25,26 +25,55 @@
     }
 
     .container {
-      max-width: 980px;
+      max-width: 1000px;
       margin: 0 auto;
     }
 
     h1 {
       text-align: center;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       font-size: 1.5rem;
     }
 
-    h3 {
-      margin-top: 24px;
-      margin-bottom: 6px;
+    /* Tab Controls */
+    .nav-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 4px;
     }
 
+    .tab-btn {
+      background: #e0e0e0;
+      color: #444;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px 6px 0 0;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Cards & Grids */
     .dashboard {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
 
     .card {
@@ -58,6 +87,11 @@
     .card.highlight {
       border: 2px solid var(--purple);
       background-color: #f3e5f5;
+    }
+
+    .card.warning-box {
+      border: 2px solid var(--warning);
+      background-color: #fff3e0;
     }
 
     .card .title {
@@ -78,13 +112,43 @@
     .text-primary { color: var(--primary); }
     .text-purple { color: var(--purple); }
 
-    .controls {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+    /* Tables & Controls */
+    .table-container {
+      background: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      overflow-x: auto;
       margin-bottom: 16px;
-      justify-content: space-between;
     }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background-color: #f8f9fa;
+      font-size: 0.78rem;
+      color: #555;
+    }
+
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      padding: 6px;
+      box-sizing: border-box;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    input[type="number"] { text-align: right; }
 
     button {
       background-color: var(--primary);
@@ -100,565 +164,582 @@
     button.btn-secondary { background-color: #757575; }
     button.btn-danger { background-color: #d32f2f; }
 
-    .table-container {
-      background: var(--card-bg);
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      overflow-x: auto;
-      margin-bottom: 16px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 0.9rem;
-    }
-
-    th, td {
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    th {
-      background-color: #f8f9fa;
-      font-size: 0.8rem;
-      color: #555;
-    }
-
-    input[type="text"], input[type="number"] {
-      width: 100%;
-      padding: 6px;
-      box-sizing: border-box;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-size: 0.85rem;
-    }
-
-    input[type="number"] {
-      text-align: right;
-    }
-
-    .override-active {
-      border-color: var(--warning) !important;
-      background-color: #fffde7;
-    }
-
-    .read-only-input {
-      background-color: #f1f3f5;
-      font-weight: bold;
-    }
-
-    .pending-row {
-      background-color: #fff8e1;
-    }
-
-    .actions-cell {
-      text-align: center;
-      width: 40px;
-    }
-
-    .note-text {
-      font-size: 0.8rem;
-      color: #666;
-      margin-top: -2px;
-      margin-bottom: 10px;
-    }
-
-    .flex-form {
+    .form-row {
       display: flex;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      background: var(--card-bg);
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    .flex-form input[type="text"] { flex: 2; }
-    .flex-form input[type="number"] { flex: 1; }
+    .form-row input, .form-row select {
+      flex: 1;
+      min-width: 110px;
+    }
+
+    .actions-cell { text-align: center; width: 35px; }
+    .note-text { font-size: 0.8rem; color: #666; margin-top: -4px; margin-bottom: 10px; }
+    
+    .person-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>Disney Budget & Flex Tracker</h1>
+  <h1>Disney Travel & Live Tracker</h1>
 
-  <!-- Summary Dashboard -->
-  <div class="dashboard">
-    <div class="card">
-      <div class="title">Total Base Budget</div>
-      <div class="value" id="dash-base">$0</div>
+  <!-- Navigation Tabs -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-live')">Live Spending & Souvenirs</button>
+    <button class="tab-btn" onclick="switchTab('tab-gc')">Gift Card Engine</button>
+    <button class="tab-btn" onclick="switchTab('tab-budget')">Core Trip Budget</button>
+  </div>
+
+  <!-- Global Import/Export Bar -->
+  <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 12px;">
+    <button id="btn-export" class="btn-secondary" style="padding: 4px 8px; font-size: 0.78rem;">Export JSON</button>
+    <button id="btn-import-trigger" class="btn-secondary" style="padding: 4px 8px; font-size: 0.78rem;">Import JSON</button>
+    <input type="file" id="importFile" style="display:none" accept=".json">
+  </div>
+
+  <!-- TAB 1: LIVE SPENDING & SOUVENIRS -->
+  <div id="tab-live" class="tab-content active">
+    <h3>Souvenir Allowance Tracker ($150 Each Default)</h3>
+    <div class="person-card-grid" id="person-cards"></div>
+
+    <h3>Log Purchase / Receipt</h3>
+    <div class="form-row">
+      <input type="text" id="sp-desc" placeholder="Item / Place (e.g., Lightsaber)">
+      <input type="number" step="any" id="sp-amount" placeholder="Amount ($)">
+      <select id="sp-person">
+        <option value="None">Non-Souvenir / General</option>
+        <option value="Mom">Mom</option>
+        <option value="Dad">Dad</option>
+        <option value="Eleanor">Eleanor</option>
+        <option value="Joanna">Joanna</option>
+        <option value="Max">Max</option>
+      </select>
+      <select id="sp-envelope">
+        <option value="None">No GC Envelope</option>
+      </select>
+      <label style="display: flex; align-items: center; font-size: 0.85rem; gap: 4px;">
+        <input type="checkbox" id="sp-paid-gc"> Paid w/ GC
+      </label>
+      <button id="btn-add-spend">+ Log Purchase</button>
     </div>
-    <div class="card">
-      <div class="title">Cash Gifts</div>
-      <div class="value text-primary" id="dash-gifts">$0</div>
-    </div>
-    <div class="card">
-      <div class="title">Total Spent</div>
-      <div class="value" id="dash-spent">$0</div>
-    </div>
-    <div class="card">
-      <div class="title">Realized Savings</div>
-      <div class="value text-success" id="dash-saved">$0</div>
-    </div>
-    <div class="card">
-      <div class="title">Overall Left</div>
-      <div class="value text-warning" id="dash-remaining">$0</div>
-    </div>
-    <div class="card highlight">
-      <div class="title">Available Flex Buffer</div>
-      <div class="value text-purple" id="dash-flex-buffer">$0</div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th style="width: 100px;">Amount</th>
+            <th style="width: 100px;">Souvenir For</th>
+            <th style="width: 90px; text-align: center;">Paid w/ GC?</th>
+            <th style="width: 140px;">GC Envelope Drawn</th>
+            <th style="width: 30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="spending-log-body"></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- Global Action Buttons -->
-  <div class="controls">
-    <div>
+  <!-- TAB 2: GIFT CARD ENGINE -->
+  <div id="tab-gc" class="tab-content">
+    <div class="dashboard">
+      <div class="card">
+        <div class="title">Total GC Purchased</div>
+        <div class="value text-primary" id="gc-dash-total">$0</div>
+      </div>
+      <div class="card">
+        <div class="title">Liquid GC Balance</div>
+        <div class="value text-success" id="gc-dash-liquid">$0</div>
+      </div>
+      <div class="card">
+        <div class="title">Future Envelope Need</div>
+        <div class="value" id="gc-dash-needed">$0</div>
+      </div>
+      <div class="card highlight">
+        <div class="title">Buy Recommendation</div>
+        <div class="value text-purple" id="gc-dash-buy">$0</div>
+      </div>
+    </div>
+
+    <h3>Gift Card Envelopes & Dynamic Goals</h3>
+    <div class="note-text">Envelopes track target goals. As you spend using GCs, the remaining goal drops so you don't over-buy gift cards.</div>
+    
+    <div class="form-row">
+      <input type="text" id="env-name" placeholder="Envelope Name (e.g., Topolino's)">
+      <input type="number" step="any" id="env-target" placeholder="Target Budget ($)">
+      <button id="btn-add-env">+ Add Envelope</button>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Envelope Name</th>
+            <th style="width: 110px;">Target Goal</th>
+            <th style="width: 110px;">GC Spent</th>
+            <th style="width: 120px;">Remaining Need</th>
+            <th style="width: 30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="envelope-body"></tbody>
+      </table>
+    </div>
+
+    <h3>Gift Card Purchases & Batches</h3>
+    <div class="form-row">
+      <input type="text" id="gc-batch-name" placeholder="Batch / Source (e.g., Target 5% Promo)">
+      <input type="number" step="any" id="gc-batch-amount" placeholder="Card Value ($)">
+      <button id="btn-add-gc-batch">+ Add GC Batch</button>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Gift Card Source / Label</th>
+            <th style="width: 140px;">Amount</th>
+            <th style="width: 30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="gc-batches-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: CORE TRIP BUDGET -->
+  <div id="tab-budget" class="tab-content">
+    <div class="dashboard">
+      <div class="card">
+        <div class="title">Base Budget</div>
+        <div class="value" id="dash-base">$0</div>
+      </div>
+      <div class="card">
+        <div class="title">Cash Gifts</div>
+        <div class="value text-primary" id="dash-gifts">$0</div>
+      </div>
+      <div class="card">
+        <div class="title">Total Spent</div>
+        <div class="value" id="dash-spent">$0</div>
+      </div>
+      <div class="card">
+        <div class="title">Overall Left</div>
+        <div class="value text-warning" id="dash-remaining">$0</div>
+      </div>
+      <div class="card highlight">
+        <div class="title">Flex Buffer</div>
+        <div class="value text-purple" id="dash-flex-buffer">$0</div>
+      </div>
+    </div>
+
+    <div class="controls" style="display: flex; gap: 8px; margin-bottom: 12px;">
       <button id="btn-add-item">+ Add Fixed Expense</button>
       <button id="btn-add-gift">+ Add Cash Gift</button>
+      <button id="btn-reset" class="btn-danger" style="margin-left: auto;">Reset Defaults</button>
     </div>
-    <div>
-      <button id="btn-export" class="btn-secondary">Export JSON</button>
-      <button id="btn-import-trigger" class="btn-secondary">Import JSON</button>
-      <input type="file" id="importFile" style="display:none" accept=".json">
-      <button id="btn-reset" class="btn-danger">Reset Defaults</button>
+
+    <h3>Fixed Line Expenses</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Expense Item</th>
+            <th style="width: 110px;">Budget Target</th>
+            <th style="width: 110px;">Actual Spent</th>
+            <th style="width: 70px; text-align: center;">Pending?</th>
+            <th style="width: 30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="budget-body"></tbody>
+      </table>
     </div>
-  </div>
 
-  <!-- Fixed Budget Table -->
-  <h3>Fixed Line Expenses</h3>
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Activity / Expense Item</th>
-          <th style="width: 100px;">Budget Target</th>
-          <th style="width: 100px;">Actual Spent</th>
-          <th style="width: 70px; text-align: center;">Pending?</th>
-          <th style="width: 110px;">Saved (Override)</th>
-          <th style="width: 30px;"></th>
-        </tr>
-      </thead>
-      <tbody id="budget-body"></tbody>
-    </table>
-  </div>
-
-  <!-- Dynamic Flex Pot Mini-Budget -->
-  <h3>Flex Pot Mini-Budget (Ponchos, Fans, Airport Snacks, Gifts)</h3>
-  <div class="note-text">Log planned or actual flex purchases here. Gifts automatically expand your available flex pool capacity.</div>
-  
-  <div class="flex-form">
-    <input type="text" id="flex-desc" placeholder="Item description (e.g., Portable Fans)">
-    <input type="number" step="any" id="flex-plan-budget" placeholder="Budget Target ($)">
-    <input type="number" step="any" id="flex-amount" placeholder="Actual Spent ($)">
-    <button id="btn-add-flex-tx">+ Add Flex Item</button>
-  </div>
-
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th style="width: 110px;">Budget Target</th>
-          <th style="width: 110px;">Actual Spent</th>
-          <th style="width: 70px; text-align: center;">Pending?</th>
-          <th style="width: 30px;"></th>
-        </tr>
-      </thead>
-      <tbody id="flex-tx-body"></tbody>
-    </table>
-  </div>
-
-  <!-- Cash Gifts Section -->
-  <h3>Cash Gifts & External Support</h3>
-  <div class="note-text">External funds that increase your total cash pool and expand your available Flex Pot.</div>
-  <div class="table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Gift Source / Notes</th>
-          <th style="width: 140px;">Amount</th>
-          <th style="width: 30px;"></th>
-        </tr>
-      </thead>
-      <tbody id="gifts-body"></tbody>
-    </table>
+    <h3>Cash Gifts</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Gift Source</th>
+            <th style="width: 140px;">Amount</th>
+            <th style="width: 30px;"></th>
+          </tr>
+        </thead>
+        <tbody id="gifts-body"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
 <script>
-  const defaultItems = [
-    { id: 1, name: "Southwest Flight", budget: 56, spent: 0, override: null, isFlex: false, pending: false },
-    { id: 2, name: "Reagan Parking", budget: 175, spent: 0, override: null, isFlex: false, pending: false },
-    { id: 3, name: "Uber to Disney", budget: 52, spent: 0, override: null, isFlex: false, pending: true },
-    { id: 4, name: "Disney Package (Hotel + Tickets)", budget: 4265, spent: 0, override: null, isFlex: false, pending: false },
-    { id: 5, name: "Disney Dining Package", budget: 605, spent: 0, override: null, isFlex: false, pending: false },
-    { id: 6, name: "Olga Cantina", budget: 50, spent: 0, override: null, isFlex: false, pending: false },
-    { id: 7, name: "Topolinos", budget: 260, spent: 0, override: null, isFlex: false, pending: false },
-    { id: 8, name: "Fast Passes", budget: 500, spent: 0, override: null, isFlex: false, pending: false },
-    { id: 9, name: "Kids Souvenirs", budget: 300, spent: 0, override: null, isFlex: false, pending: false },
-    { id: 10, name: "Adult Souvenirs", budget: 200, spent: 0, override: null, isFlex: false, pending: false },
-    { id: 11, name: "Tipping ($15 bags x2, $20 nights)", budget: 55, spent: 0, override: null, isFlex: false, pending: false },
-    { id: 12, name: "Uber to Airport", budget: 32, spent: 0, override: null, isFlex: false, pending: true },
-    { id: 13, name: "Base Flex Pot", budget: 350, spent: 0, override: null, isFlex: true, pending: false }
+  const defaultPeople = [
+    { name: "Mom", target: 150 },
+    { name: "Dad", target: 150 },
+    { name: "Eleanor", target: 150 },
+    { name: "Joanna", target: 150 },
+    { name: "Max", target: 150 }
   ];
 
-  let state = { items: [], gifts: [], flexTx: [] };
+  const defaultEnvelopes = [
+    { id: 1, name: "Kids Souvenirs", target: 450 },
+    { id: 2, name: "Adult Souvenirs", target: 300 },
+    { id: 3, name: "Topolino's Dining", target: 260 },
+    { id: 4, name: "In-Park Snacks / Extras", target: 100 }
+  ];
+
+  const defaultItems = [
+    { id: 1, name: "Southwest Flight", budget: 56, spent: 0, pending: false },
+    { id: 2, name: "Reagan Parking", budget: 175, spent: 0, pending: false },
+    { id: 3, name: "Uber to Disney", budget: 52, spent: 0, pending: true },
+    { id: 4, name: "Disney Package (Hotel + Tickets)", budget: 4265, spent: 0, pending: false },
+    { id: 5, name: "Disney Dining Package", budget: 605, spent: 0, pending: false },
+    { id: 6, name: "Olga Cantina", budget: 50, spent: 0, pending: false },
+    { id: 7, name: "Topolinos", budget: 260, spent: 0, pending: false },
+    { id: 8, name: "Fast Passes", budget: 500, spent: 0, pending: false },
+    { id: 9, name: "Souvenirs Total Pool", budget: 750, spent: 0, pending: false },
+    { id: 10, name: "Tipping & Misc", budget: 55, spent: 0, pending: false },
+    { id: 11, name: "Base Flex Pot", budget: 350, spent: 0, pending: false }
+  ];
+
+  let state = {
+    people: JSON.parse(JSON.stringify(defaultPeople)),
+    envelopes: JSON.parse(JSON.stringify(defaultEnvelopes)),
+    gcBatches: [{ id: 1, label: "Initial Purchased Cards", amount: 300 }],
+    spendingLog: [],
+    items: JSON.parse(JSON.stringify(defaultItems)),
+    gifts: []
+  };
 
   function fmt(num) {
     return '$' + Number(num || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   }
 
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    
+    event.target.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+  }
+
   function init() {
-    const saved = localStorage.getItem('disney_budget_v6');
+    const saved = localStorage.getItem('disney_live_tracker_v1');
     if (saved) {
       try {
         state = JSON.parse(saved);
-        if (!state.flexTx) state.flexTx = [];
-        state.items.forEach(item => {
-          if (typeof item.pending === 'undefined') item.pending = false;
-        });
-        state.flexTx.forEach(tx => {
-          if (typeof tx.budget === 'undefined') tx.budget = tx.amount || 0;
-          if (typeof tx.pending === 'undefined') tx.pending = false;
-        });
+        if (!state.people) state.people = JSON.parse(JSON.stringify(defaultPeople));
+        if (!state.envelopes) state.envelopes = JSON.parse(JSON.stringify(defaultEnvelopes));
+        if (!state.gcBatches) state.gcBatches = [];
+        if (!state.spendingLog) state.spendingLog = [];
+        if (!state.items) state.items = JSON.parse(JSON.stringify(defaultItems));
+        if (!state.gifts) state.gifts = [];
       } catch (e) {
-        state = { items: JSON.parse(JSON.stringify(defaultItems)), gifts: [], flexTx: [] };
+        console.error("Failed to parse state", e);
       }
-    } else {
-      state = { items: JSON.parse(JSON.stringify(defaultItems)), gifts: [], flexTx: [] };
     }
-    syncFlexSpent();
     render();
   }
 
   function save() {
-    localStorage.setItem('disney_budget_v6', JSON.stringify(state));
-    calculateAndRenderDashboard();
-  }
-
-  function syncFlexSpent() {
-    const flexSpentSum = state.flexTx.reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0);
-    const flexItem = state.items.find(i => i.isFlex || i.name.toLowerCase().includes('flex'));
-    if (flexItem) {
-      flexItem.spent = flexSpentSum;
-    }
+    localStorage.setItem('disney_live_tracker_v1', JSON.stringify(state));
+    render();
   }
 
   function render() {
-    renderBudgetTable();
-    renderFlexTxTable();
-    renderGiftsTable();
-    calculateAndRenderDashboard();
+    renderPeopleCards();
+    renderEnvelopeDropdown();
+    renderSpendingLog();
+    renderGCEngine();
+    renderCoreBudget();
   }
 
-  function renderBudgetTable() {
-    const tbody = document.getElementById('budget-body');
-    tbody.innerHTML = '';
+  /* --- TAB 1: SPENDING & SOUVENIRS --- */
+  function renderPeopleCards() {
+    const container = document.getElementById('person-cards');
+    container.innerHTML = '';
 
-    state.items.forEach((item, idx) => {
-      const isFlexRow = item.isFlex || item.name.toLowerCase().includes('flex');
-      if (isFlexRow) return; // Flex pot is rendered via its dedicated mini-budget table below
-
-      const tr = document.createElement('tr');
-      const calcSaved = item.budget - item.spent;
-      const isOverridden = item.override !== null && item.override !== "";
-      const isPending = item.pending && (!item.spent || item.spent === 0);
-
-      if (isPending) tr.classList.add('pending-row');
-
-      tr.innerHTML = `
-        <td>
-          <input type="text" value="${escapeHtml(item.name)}" data-idx="${idx}" data-field="name" class="input-item">
-        </td>
-        <td>
-          <input type="number" step="any" value="${item.budget}" data-idx="${idx}" data-field="budget" class="input-item">
-        </td>
-        <td>
-          <input type="number" step="any" value="${item.spent || ''}" placeholder="0" class="input-item" data-idx="${idx}" data-field="spent">
-        </td>
-        <td style="text-align: center;">
-          <input type="checkbox" ${item.pending ? 'checked' : ''} data-idx="${idx}" class="chk-pending" title="Flag as pending future expense">
-        </td>
-        <td>
-          <input type="number" step="any" 
-                 class="input-item ${isOverridden ? 'override-active' : ''}"
-                 value="${isOverridden ? item.override : ''}" 
-                 placeholder="${calcSaved}" 
-                 title="Override calculated savings"
-                 data-idx="${idx}" data-field="override">
-        </td>
-        <td class="actions-cell">
-          <button class="btn-danger btn-delete-item" data-idx="${idx}" style="padding: 2px 6px;">&times;</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    document.querySelectorAll('.input-item').forEach(input => {
-      input.addEventListener('change', (e) => {
-        const idx = e.target.dataset.idx;
-        const field = e.target.dataset.field;
-        const val = e.target.value;
-
-        if (field === 'name') {
-          state.items[idx].name = val;
-        } else if (field === 'override') {
-          state.items[idx].override = val === "" ? null : parseFloat(val);
-          renderBudgetTable();
-        } else {
-          state.items[idx][field] = parseFloat(val) || 0;
-          renderBudgetTable();
-        }
-        save();
-      });
-    });
-
-    document.querySelectorAll('.chk-pending').forEach(chk => {
-      chk.addEventListener('change', (e) => {
-        const idx = e.target.dataset.idx;
-        state.items[idx].pending = e.target.checked;
-        renderBudgetTable();
-        save();
-      });
-    });
-
-    document.querySelectorAll('.btn-delete-item').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = e.target.dataset.idx;
-        state.items.splice(idx, 1);
-        render();
-        save();
-      });
-    });
-  }
-
-  function renderFlexTxTable() {
-    const tbody = document.getElementById('flex-tx-body');
-    tbody.innerHTML = '';
-
-    state.flexTx.forEach((tx, idx) => {
-      const tr = document.createElement('tr');
-      const isPending = tx.pending && (!tx.amount || tx.amount === 0);
-      if (isPending) tr.classList.add('pending-row');
-
-      tr.innerHTML = `
-        <td>
-          <input type="text" value="${escapeHtml(tx.desc)}" data-idx="${idx}" data-field="desc" class="input-flex-tx">
-        </td>
-        <td>
-          <input type="number" step="any" value="${tx.budget || ''}" placeholder="0" data-idx="${idx}" data-field="budget" class="input-flex-tx">
-        </td>
-        <td>
-          <input type="number" step="any" value="${tx.amount || ''}" placeholder="0" data-idx="${idx}" data-field="amount" class="input-flex-tx">
-        </td>
-        <td style="text-align: center;">
-          <input type="checkbox" ${tx.pending ? 'checked' : ''} data-idx="${idx}" class="chk-flex-pending" title="Flag as pending flex expense">
-        </td>
-        <td class="actions-cell">
-          <button class="btn-danger btn-delete-flex-tx" data-idx="${idx}" style="padding: 2px 6px;">&times;</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    document.querySelectorAll('.input-flex-tx').forEach(input => {
-      input.addEventListener('change', (e) => {
-        const idx = e.target.dataset.idx;
-        const field = e.target.dataset.field;
-        const val = e.target.value;
-
-        if (field === 'desc') {
-          state.flexTx[idx].desc = val;
-        } else {
-          state.flexTx[idx][field] = parseFloat(val) || 0;
-        }
-        syncFlexSpent();
-        render();
-        save();
-      });
-    });
-
-    document.querySelectorAll('.chk-flex-pending').forEach(chk => {
-      chk.addEventListener('change', (e) => {
-        const idx = e.target.dataset.idx;
-        state.flexTx[idx].pending = e.target.checked;
-        render();
-        save();
-      });
-    });
-
-    document.querySelectorAll('.btn-delete-flex-tx').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = e.target.dataset.idx;
-        state.flexTx.splice(idx, 1);
-        syncFlexSpent();
-        render();
-        save();
-      });
-    });
-  }
-
-  function renderGiftsTable() {
-    const tbody = document.getElementById('gifts-body');
-    tbody.innerHTML = '';
-
-    state.gifts.forEach((gift, idx) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>
-          <input type="text" value="${escapeHtml(gift.name)}" data-idx="${idx}" data-field="name" class="input-gift">
-        </td>
-        <td>
-          <input type="number" step="any" value="${gift.amount || ''}" placeholder="0" data-idx="${idx}" data-field="amount" class="input-gift">
-        </td>
-        <td class="actions-cell">
-          <button class="btn-danger btn-delete-gift" data-idx="${idx}" style="padding: 2px 6px;">&times;</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    document.querySelectorAll('.input-gift').forEach(input => {
-      input.addEventListener('change', (e) => {
-        const idx = e.target.dataset.idx;
-        const field = e.target.dataset.field;
-        const val = e.target.value;
-
-        if (field === 'name') {
-          state.gifts[idx].name = val;
-        } else {
-          state.gifts[idx].amount = parseFloat(val) || 0;
-        }
-        save();
-      });
-    });
-
-    document.querySelectorAll('.btn-delete-gift').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const idx = e.target.dataset.idx;
-        state.gifts.splice(idx, 1);
-        render();
-        save();
-      });
-    });
-  }
-
-  function calculateAndRenderDashboard() {
-    let totalBaseBudget = 0;
-    let totalSpent = 0;
-    let realizedFixedSavings = 0;
-    let baseFlexPotBudget = 0;
-
-    // 1. Process Fixed Expense Items
-    state.items.forEach(item => {
-      const budget = parseFloat(item.budget) || 0;
-      const spent = parseFloat(item.spent) || 0;
-      const isFlex = item.isFlex || item.name.toLowerCase().includes('flex');
-
-      totalBaseBudget += budget;
-
-      if (isFlex) {
-        baseFlexPotBudget += budget;
-      } else {
-        totalSpent += spent;
-
-        // Realized Savings math: Only count savings if spent > 0 or overridden.
-        if (item.override !== null && item.override !== "") {
-          realizedFixedSavings += parseFloat(item.override) || 0;
-        } else if (spent > 0) {
-          realizedFixedSavings += (budget - spent); // Can be negative if over-budget
-        }
-      }
-    });
-
-    // 2. Process Cash Gifts
-    let totalGifts = 0;
-    state.gifts.forEach(g => {
-      totalGifts += parseFloat(g.amount) || 0;
-    });
-
-    // 3. Process Flex Pot Mini-Transactions
-    let totalFlexSpent = 0;
-    let totalFlexPending = 0;
-
-    state.flexTx.forEach(tx => {
-      const txBudget = parseFloat(tx.budget) || 0;
-      const txSpent = parseFloat(tx.amount) || 0;
+    state.people.forEach(p => {
+      const spent = state.spendingLog
+        .filter(s => s.person === p.name)
+        .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
       
-      totalFlexSpent += txSpent;
+      const remaining = p.target - spent;
 
-      if (tx.pending && txSpent === 0) {
-        totalFlexPending += txBudget;
-      }
+      const card = document.createElement('div');
+      card.className = `card ${remaining < 0 ? 'warning-box' : ''}`;
+      card.innerHTML = `
+        <div class="title">${escapeHtml(p.name)}</div>
+        <div class="value ${remaining >= 0 ? 'text-success' : 'text-warning'}">${fmt(remaining)}</div>
+        <div style="font-size: 0.75rem; color: #666; margin-top: 4px;">Spent: ${fmt(spent)} / ${fmt(p.target)}</div>
+      `;
+      container.appendChild(card);
     });
-
-    totalSpent += totalFlexSpent;
-
-    // 4. Final Calculations
-    const totalCashPool = totalBaseBudget + totalGifts;
-    const overallLeft = totalCashPool - totalSpent;
-
-    // Available Flex Buffer = (Base Flex Pot + Gifts) - Flex Spent - Flex Pending Reserved + Realized Fixed Line Savings
-    const totalFlexCapacity = baseFlexPotBudget + totalGifts;
-    const availableFlexBuffer = totalFlexCapacity - totalFlexSpent - totalFlexPending + realizedFixedSavings;
-
-    document.getElementById('dash-base').innerText = fmt(totalBaseBudget);
-    document.getElementById('dash-gifts').innerText = fmt(totalGifts);
-    document.getElementById('dash-spent').innerText = fmt(totalSpent);
-    document.getElementById('dash-saved').innerText = fmt(realizedFixedSavings);
-    document.getElementById('dash-remaining').innerText = fmt(overallLeft);
-    document.getElementById('dash-flex-buffer').innerText = fmt(Math.max(0, availableFlexBuffer));
   }
 
-  function escapeHtml(str) {
-    return String(str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  function renderEnvelopeDropdown() {
+    const sel = document.getElementById('sp-envelope');
+    sel.innerHTML = '<option value="None">No GC Envelope</option>';
+    state.envelopes.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.id;
+      opt.textContent = e.name;
+      sel.appendChild(opt);
+    });
   }
 
-  // Event Listeners
-  document.getElementById('btn-add-flex-tx').addEventListener('click', () => {
-    const descEl = document.getElementById('flex-desc');
-    const planEl = document.getElementById('flex-plan-budget');
-    const amtEl = document.getElementById('flex-amount');
-    
-    const desc = descEl.value.trim() || "Misc Flex Purchase";
-    const budget = parseFloat(planEl.value) || 0;
-    const amount = parseFloat(amtEl.value) || 0;
+  function renderSpendingLog() {
+    const tbody = document.getElementById('spending-log-body');
+    tbody.innerHTML = '';
 
-    state.flexTx.push({ id: Date.now(), desc, budget: budget || amount, amount, pending: amount === 0 });
-    descEl.value = '';
-    planEl.value = '';
-    amtEl.value = '';
+    state.spendingLog.forEach((sp, idx) => {
+      const env = state.envelopes.find(e => e.id == sp.envelopeId);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(sp.desc)}</td>
+        <td style="font-weight: bold;">${fmt(sp.amount)}</td>
+        <td>${sp.person !== 'None' ? `<span class="text-primary">${escapeHtml(sp.person)}</span>` : '-'}</td>
+        <td style="text-align: center;">${sp.paidGC ? '✓' : '-'}</td>
+        <td>${env ? escapeHtml(env.name) : '-'}</td>
+        <td class="actions-cell">
+          <button class="btn-danger" onclick="deleteSpend(${idx})" style="padding: 2px 6px;">&times;</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('btn-add-spend').addEventListener('click', () => {
+    const desc = document.getElementById('sp-desc').value.trim() || "Item";
+    const amount = parseFloat(document.getElementById('sp-amount').value) || 0;
+    const person = document.getElementById('sp-person').value;
+    const envelopeId = document.getElementById('sp-envelope').value;
+    const paidGC = document.getElementById('sp-paid-gc').checked;
+
+    if (amount <= 0) return;
+
+    state.spendingLog.push({ id: Date.now(), desc, amount, person, envelopeId, paidGC });
     
-    syncFlexSpent();
-    render();
+    document.getElementById('sp-desc').value = '';
+    document.getElementById('sp-amount').value = '';
+    document.getElementById('sp-paid-gc').checked = false;
+
     save();
   });
 
+  function deleteSpend(idx) {
+    state.spendingLog.splice(idx, 1);
+    save();
+  }
+
+  /* --- TAB 2: GIFT CARD ENGINE --- */
+  function renderGCEngine() {
+    // 1. Total GC Purchased
+    const totalGC = state.gcBatches.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
+
+    // 2. Total GC Spent across log
+    const totalGCSpent = state.spendingLog
+      .filter(s => s.paidGC)
+      .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+
+    const liquidGC = totalGC - totalGCSpent;
+
+    // 3. Render Envelopes Table & Calculate Remaining Future Goal Need
+    const envTbody = document.getElementById('envelope-body');
+    envTbody.innerHTML = '';
+    let totalRemainingNeed = 0;
+
+    state.envelopes.forEach((env, idx) => {
+      const gcSpentInEnv = state.spendingLog
+        .filter(s => s.paidGC && s.envelopeId == env.id)
+        .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+
+      const remainingNeed = Math.max(0, env.target - gcSpentInEnv);
+      totalRemainingNeed += remainingNeed;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" value="${escapeHtml(env.name)}" onchange="updateEnv(${idx}, 'name', this.value)"></td>
+        <td><input type="number" value="${env.target}" onchange="updateEnv(${idx}, 'target', this.value)"></td>
+        <td>${fmt(gcSpentInEnv)}</td>
+        <td style="font-weight: bold;" class="${remainingNeed > 0 ? 'text-warning' : 'text-success'}">${fmt(remainingNeed)}</td>
+        <td class="actions-cell"><button class="btn-danger" onclick="deleteEnv(${idx})" style="padding: 2px 6px;">&times;</button></td>
+      `;
+      envTbody.appendChild(tr);
+    });
+
+    // 4. Buy Recommendation = Remaining Envelope Need - Current Liquid GC Balance
+    const buyRec = Math.max(0, totalRemainingNeed - liquidGC);
+
+    document.getElementById('gc-dash-total').innerText = fmt(totalGC);
+    document.getElementById('gc-dash-liquid').innerText = fmt(liquidGC);
+    document.getElementById('gc-dash-needed').innerText = fmt(totalRemainingNeed);
+    document.getElementById('gc-dash-buy').innerText = fmt(buyRec);
+
+    // Render GC Batches Table
+    const batchTbody = document.getElementById('gc-batches-body');
+    batchTbody.innerHTML = '';
+    state.gcBatches.forEach((b, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" value="${escapeHtml(b.label)}" onchange="updateGCBatch(${idx}, 'label', this.value)"></td>
+        <td><input type="number" value="${b.amount}" onchange="updateGCBatch(${idx}, 'amount', this.value)"></td>
+        <td class="actions-cell"><button class="btn-danger" onclick="deleteGCBatch(${idx})" style="padding: 2px 6px;">&times;</button></td>
+      `;
+      batchTbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('btn-add-env').addEventListener('click', () => {
+    const name = document.getElementById('env-name').value.trim() || "New Goal";
+    const target = parseFloat(document.getElementById('env-target').value) || 0;
+    state.envelopes.push({ id: Date.now(), name, target });
+    document.getElementById('env-name').value = '';
+    document.getElementById('env-target').value = '';
+    save();
+  });
+
+  function updateEnv(idx, field, val) {
+    if (field === 'target') state.envelopes[idx].target = parseFloat(val) || 0;
+    else state.envelopes[idx].name = val;
+    save();
+  }
+
+  function deleteEnv(idx) {
+    state.envelopes.splice(idx, 1);
+    save();
+  }
+
+  document.getElementById('btn-add-gc-batch').addEventListener('click', () => {
+    const label = document.getElementById('gc-batch-name').value.trim() || "Gift Card";
+    const amount = parseFloat(document.getElementById('gc-batch-amount').value) || 0;
+    state.gcBatches.push({ id: Date.now(), label, amount });
+    document.getElementById('gc-batch-name').value = '';
+    document.getElementById('gc-batch-amount').value = '';
+    save();
+  });
+
+  function updateGCBatch(idx, field, val) {
+    if (field === 'amount') state.gcBatches[idx].amount = parseFloat(val) || 0;
+    else state.gcBatches[idx].label = val;
+    save();
+  }
+
+  function deleteGCBatch(idx) {
+    state.gcBatches.splice(idx, 1);
+    save();
+  }
+
+  /* --- TAB 3: CORE TRIP BUDGET --- */
+  function renderCoreBudget() {
+    const tbody = document.getElementById('budget-body');
+    tbody.innerHTML = '';
+
+    let totalBase = 0;
+    let totalSpent = 0;
+
+    state.items.forEach((item, idx) => {
+      totalBase += item.budget;
+      totalSpent += item.spent;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" value="${escapeHtml(item.name)}" onchange="updateItem(${idx}, 'name', this.value)"></td>
+        <td><input type="number" value="${item.budget}" onchange="updateItem(${idx}, 'budget', this.value)"></td>
+        <td><input type="number" value="${item.spent}" onchange="updateItem(${idx}, 'spent', this.value)"></td>
+        <td style="text-align: center;"><input type="checkbox" ${item.pending ? 'checked' : ''} onchange="updateItem(${idx}, 'pending', this.checked)"></td>
+        <td class="actions-cell"><button class="btn-danger" onclick="deleteItem(${idx})" style="padding: 2px 6px;">&times;</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    let totalGifts = state.gifts.reduce((sum, g) => sum + (parseFloat(g.amount) || 0), 0);
+
+    const giftTbody = document.getElementById('gifts-body');
+    giftTbody.innerHTML = '';
+    state.gifts.forEach((g, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="text" value="${escapeHtml(g.name)}" onchange="updateGift(${idx}, 'name', this.value)"></td>
+        <td><input type="number" value="${g.amount}" onchange="updateGift(${idx}, 'amount', this.value)"></td>
+        <td class="actions-cell"><button class="btn-danger" onclick="deleteGift(${idx})" style="padding: 2px 6px;">&times;</button></td>
+      `;
+      giftTbody.appendChild(tr);
+    });
+
+    const overallLeft = (totalBase + totalGifts) - totalSpent;
+
+    document.getElementById('dash-base').innerText = fmt(totalBase);
+    document.getElementById('dash-gifts').innerText = fmt(totalGifts);
+    document.getElementById('dash-spent').innerText = fmt(totalSpent);
+    document.getElementById('dash-remaining').innerText = fmt(overallLeft);
+    document.getElementById('dash-flex-buffer').innerText = fmt(Math.max(0, overallLeft));
+  }
+
+  function updateItem(idx, field, val) {
+    if (field === 'pending') state.items[idx].pending = val;
+    else if (field === 'name') state.items[idx].name = val;
+    else state.items[idx][field] = parseFloat(val) || 0;
+    save();
+  }
+
+  function deleteItem(idx) {
+    state.items.splice(idx, 1);
+    save();
+  }
+
+  function updateGift(idx, field, val) {
+    if (field === 'name') state.gifts[idx].name = val;
+    else state.gifts[idx].amount = parseFloat(val) || 0;
+    save();
+  }
+
+  function deleteGift(idx) {
+    state.gifts.splice(idx, 1);
+    save();
+  }
+
   document.getElementById('btn-add-item').addEventListener('click', () => {
-    state.items.push({ id: Date.now(), name: "New Fixed Expense", budget: 0, spent: 0, override: null, isFlex: false, pending: false });
-    render();
+    state.items.push({ id: Date.now(), name: "Expense Item", budget: 0, spent: 0, pending: false });
     save();
   });
 
   document.getElementById('btn-add-gift').addEventListener('click', () => {
-    state.gifts.push({ id: Date.now(), name: "Grandma's Gift", amount: 0 });
-    render();
+    state.gifts.push({ id: Date.now(), name: "Cash Gift", amount: 0 });
     save();
   });
 
   document.getElementById('btn-reset').addEventListener('click', () => {
-    if (confirm("Reset to default Disney items?")) {
-      localStorage.removeItem('disney_budget_v6');
-      state = { items: JSON.parse(JSON.stringify(defaultItems)), gifts: [], flexTx: [] };
-      syncFlexSpent();
-      render();
+    if (confirm("Reset application data to default trip state?")) {
+      localStorage.removeItem('disney_live_tracker_v1');
+      state = {
+        people: JSON.parse(JSON.stringify(defaultPeople)),
+        envelopes: JSON.parse(JSON.stringify(defaultEnvelopes)),
+        gcBatches: [{ id: 1, label: "Initial Purchased Cards", amount: 300 }],
+        spendingLog: [],
+        items: JSON.parse(JSON.stringify(defaultItems)),
+        gifts: []
+      };
       save();
     }
   });
 
+  /* JSON Import/Export */
   document.getElementById('btn-export').addEventListener('click', () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `disney_budget_${new Date().toISOString().slice(0,10)}.json`);
+    downloadAnchor.setAttribute("download", `disney_trip_tracker_${new Date().toISOString().slice(0,10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -673,22 +754,9 @@
     reader.onload = function(e) {
       try {
         const importedData = JSON.parse(e.target.result);
-        if (importedData.items && Array.isArray(importedData.items)) {
+        if (importedData) {
           state = importedData;
-          if (!state.gifts) state.gifts = [];
-          if (!state.flexTx) state.flexTx = [];
-          state.items.forEach(item => {
-            if (typeof item.pending === 'undefined') item.pending = false;
-          });
-          state.flexTx.forEach(tx => {
-            if (typeof tx.budget === 'undefined') tx.budget = tx.amount || 0;
-            if (typeof tx.pending === 'undefined') tx.pending = false;
-          });
-          syncFlexSpent();
-          render();
           save();
-        } else {
-          alert("Invalid JSON format.");
         }
       } catch (err) {
         alert("Error parsing JSON file.");
@@ -696,6 +764,10 @@
     };
     reader.readAsText(event.target.files[0]);
   });
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
 
   window.addEventListener('DOMContentLoaded', init);
 </script>

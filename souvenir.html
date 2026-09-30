@@ -3,16 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Souvenir & Person Tracker</title>
+    <title>Souvenir Tracker</title>
     <style>
         :root {
             --bg-color: #f4f6f8;
             --card-bg: #ffffff;
             --primary-color: #0066cc;
             --danger-color: #d9534f;
-            --success-color: #28a745;
+            --secondary-color: #6c757d;
             --text-color: #333333;
             --border-color: #dddddd;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
@@ -20,7 +24,7 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 12px;
         }
 
         .container {
@@ -30,11 +34,13 @@
 
         header {
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            gap: 10px;
+            margin-bottom: 16px;
             background: var(--card-bg);
-            padding: 15px 20px;
+            padding: 12px 16px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
@@ -43,37 +49,45 @@
             margin: 0;
         }
 
+        h1 { font-size: 1.4rem; }
+        h2 { font-size: 1.2rem; }
+
         .btn {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 8px 16px;
+            padding: 8px 12px;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
+            font-size: 0.9rem;
         }
 
         .btn-danger { background-color: var(--danger-color); }
-        .btn-secondary { background-color: #6c757d; }
+        .btn-secondary { background-color: var(--secondary-color); }
 
         .file-import-container {
             display: flex;
-            gap: 10px;
-            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        @media (min-width: 480px) {
+            .file-import-container { width: auto; }
         }
 
         .card {
             background: var(--card-bg);
             border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 16px;
+            margin-bottom: 16px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            gap: 16px;
         }
 
         .person-header {
@@ -90,6 +104,7 @@
             border-radius: 12px;
             font-size: 0.85em;
             font-weight: bold;
+            white-space: nowrap;
         }
 
         .badge-under { background-color: #e2f0d9; color: #385723; }
@@ -99,47 +114,63 @@
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 10px;
+            table-layout: fixed;
         }
 
         .item-table th, .item-table td {
-            padding: 6px;
+            padding: 6px 4px;
             text-align: left;
-            font-size: 0.9em;
+            font-size: 0.85rem;
+            vertical-align: middle;
         }
+
+        /* Responsive Column Widths */
+        .col-inc { width: 28px; text-align: center; }
+        .col-desc { width: auto; } /* Flexible width to grant description max space */
+        .col-cost { width: 68px; }
+        .col-person { width: 85px; }
+        .col-del { width: 28px; text-align: right; }
 
         .item-table tr {
             border-bottom: 1px solid var(--border-color);
         }
 
         .item-table tr.hypothetical {
-            background-color: #f8f9fa;
-            opacity: 0.7;
+            background-color: #fff9e6;
         }
 
         .item-table tr.disabled {
-            text-decoration: line-through;
-            opacity: 0.4;
+            opacity: 0.35;
         }
 
         input[type="text"], input[type="number"], select {
-            padding: 4px 8px;
+            padding: 6px 4px;
             border: 1px solid var(--border-color);
             border-radius: 4px;
             width: 100%;
-            box-sizing: border-box;
+            font-size: 0.85rem;
+            background: #fff;
         }
 
         .form-inline {
             display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            grid-template-columns: 1fr 1fr;
             gap: 8px;
-            align-items: center;
+        }
+
+        @media (min-width: 600px) {
+            .form-inline {
+                grid-template-columns: 2fr 1fr 1fr auto auto;
+                align-items: center;
+            }
         }
 
         .totals-summary {
-            font-size: 0.9em;
+            font-size: 0.85rem;
             color: #555;
             margin-top: 10px;
+            padding-top: 6px;
+            border-top: 1px dashed var(--border-color);
         }
     </style>
 </head>
@@ -147,38 +178,34 @@
 
 <div class="container">
     <header>
-        <h1>Souvenir Budget Tracker</h1>
+        <h1>Souvenir Tracker</h1>
         <div class="file-import-container">
             <input type="file" id="jsonInput" accept=".json" style="display: none;" onchange="importJSON(event)">
-            <button class="btn btn-secondary" onclick="document.getElementById('jsonInput').click()">Import JSON</button>
-            <button class="btn" onclick="exportData()">Export State</button>
+            <button class="btn btn-secondary" style="flex:1;" onclick="document.getElementById('jsonInput').click()">Import JSON</button>
+            <button class="btn" style="flex:1;" onclick="exportData()">Export JSON</button>
         </div>
     </header>
 
     <!-- Quick Add Form -->
     <div class="card">
-        <h3>Add New Spending</h3>
+        <h3>Add Spending / What-If</h3>
         <form id="addForm" class="form-inline" onsubmit="addSpendingItem(event)" style="margin-top: 10px;">
-            <input type="text" id="addDesc" placeholder="Item Description" required>
-            <input type="number" id="addAmount" placeholder="Amount ($)" step="0.01" required>
-            <select id="addPerson" required>
-                <!-- Populated dynamically -->
-            </select>
-            <label style="font-size: 0.85em; display: flex; align-items: center; gap: 4px;">
-                <input type="checkbox" id="addHypothetical"> What-If?
+            <input type="text" id="addDesc" placeholder="Item Name" style="grid-column: span 2;" required>
+            <input type="number" id="addAmount" placeholder="Cost ($)" step="0.01" required>
+            <select id="addPerson" required></select>
+            <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 4px; grid-column: span 2;">
+                <input type="checkbox" id="addHypothetical"> What-If item?
             </label>
-            <button type="submit" class="btn">Add</button>
+            <button type="submit" class="btn" style="grid-column: span 2;">Add Item</button>
         </form>
     </div>
 
     <!-- Grouped People Display -->
-    <div id="peopleGrid" class="grid">
-        <!-- Rendered dynamically -->
-    </div>
+    <div id="peopleGrid" class="grid"></div>
 </div>
 
 <script>
-    // Default fallback state matching project specs ($150/person)
+    // Prefilled with the JSON state provided[span_1](start_span)[span_1](end_span)
     let state = {
         people: [
             { name: "Mom", target: 150 },
@@ -188,10 +215,30 @@
             { name: "Max", target: 150 },
             { name: "None", target: 0 }
         ],
-        spendingLog: []
+        spendingLog: [
+            { id: 1790506666369, desc: "Sunglasses", amount: 26, person: "Eleanor", envelopeId: "1", paidGC: false, active: true },
+            { id: 1790506678741, desc: "Sunglasses", amount: 21, person: "Max", envelopeId: "1", paidGC: false, active: true },
+            { id: 1790506690469, desc: "Snake", amount: 31, person: "Max", envelopeId: "1", paidGC: false, active: true },
+            { id: 1790506720201, desc: "Leopard", amount: 27, person: "Joanna", envelopeId: "1", paidGC: false, active: true },
+            { id: 1790549650687, desc: "Grogu", amount: 30, person: "Eleanor", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790549660167, desc: "Mini Lightsaber", amount: 17, person: "Eleanor", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790549671428, desc: "Mini Lightsaber", amount: 17, person: "Joanna", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790549681776, desc: "Lightsaber", amount: 47, person: "Max", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790549698143, desc: "Droid", amount: 140, person: "Dad", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790604015884, desc: "Mini Droid", amount: 17, person: "Joanna", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790604026666, desc: "Mini Droid", amount: 19, person: "Max", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790622121134, desc: "Bag and Hat", amount: 50, person: "Mom", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790622142264, desc: "Magnet stuffy", amount: 17, person: "Eleanor", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790622148360, desc: "Clips", amount: 10, person: "None", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790622157047, desc: "Mickey magnet", amount: 17, person: "None", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790709760447, desc: "Vader Mask", amount: 42, person: "Max", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790799104330, desc: "Pearl", amount: 30, person: "Eleanor", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790800806552, desc: "Clothes", amount: 100, person: "Mom", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790800854022, desc: "Pirate", amount: 17, person: "Max", envelopeId: "None", paidGC: false, active: true },
+            { id: 1790800866873, desc: "Ears", amount: 39, person: "Joanna", envelopeId: "None", paidGC: false, active: true }
+        ]
     };
 
-    // Load initial JSON structures
     function importJSON(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -200,22 +247,18 @@
         reader.onload = function(e) {
             try {
                 const data = JSON.parse(e.target.result);
-                
                 if (data.people) {
                     state.people = data.people;
-                    // Ensure 'None' exists for unassigned items
                     if (!state.people.some(p => p.name === 'None')) {
                         state.people.push({ name: 'None', target: 0 });
                     }
                 }
-                
                 if (data.spendingLog) {
                     state.spendingLog = data.spendingLog.map(item => ({
                         ...item,
-                        active: true // default enabled status for calculations
+                        active: item.active !== undefined ? item.active : true
                     }));
                 }
-
                 render();
             } catch (err) {
                 alert("Invalid JSON file format.");
@@ -231,7 +274,7 @@
         const person = document.getElementById('addPerson').value;
         const isHypothetical = document.getElementById('addHypothetical').checked;
 
-        const newItem = {
+        state.spendingLog.push({
             id: Date.now(),
             desc: desc,
             amount: amount,
@@ -240,11 +283,8 @@
             paidGC: false,
             active: true,
             hypothetical: isHypothetical
-        };
-
-        state.spendingLog.push(newItem);
+        });
         
-        // Reset inputs
         document.getElementById('addDesc').value = '';
         document.getElementById('addAmount').value = '';
         document.getElementById('addHypothetical').checked = false;
@@ -275,7 +315,6 @@
         grid.innerHTML = '';
         personSelect.innerHTML = '';
 
-        // Populate person dropdown options
         state.people.forEach(p => {
             if (p.name !== 'None') {
                 const option = document.createElement('option');
@@ -285,11 +324,9 @@
             }
         });
 
-        // Render each person's card
         state.people.forEach(person => {
             const items = state.spendingLog.filter(i => i.person === person.name);
             
-            // Calculations
             const actualSpent = items
                 .filter(i => i.active && !i.hypothetical)
                 .reduce((sum, i) => sum + i.amount, 0);
@@ -298,7 +335,7 @@
                 .filter(i => i.active)
                 .reduce((sum, i) => sum + i.amount, 0);
 
-            const isOver = hypotheticalSpent > person.target;
+            const isOver = hypotheticalSpent > person.target && person.target > 0;
             const diff = hypotheticalSpent - person.target;
 
             const card = document.createElement('div');
@@ -308,9 +345,11 @@
                 <div class="person-header">
                     <h2>${person.name}</h2>
                     <div>
-                        ${person.target > 0 ? `<span style="font-size:0.85em; color:#666;">Target: $${person.target}</span>` : ''}
+                        ${person.target > 0 ? `<span style="font-size:0.8rem; color:#666;">Limit: $${person.target}</span>` : ''}
                         <span class="badge ${isOver ? 'badge-over' : 'badge-under'}">
-                            ${isOver ? `+$${diff.toFixed(2)} Over` : `$${hypotheticalSpent.toFixed(2)} Total`}
+                            ${person.target > 0 
+                                ? (isOver ? `+$${diff.toFixed(2)} Over` : `$${hypotheticalSpent.toFixed(2)} Total`)
+                                : `$${hypotheticalSpent.toFixed(2)} Unassigned`}
                         </span>
                     </div>
                 </div>
@@ -318,11 +357,11 @@
                 <table class="item-table">
                     <thead>
                         <tr>
-                            <th style="width:30px;">Inc.</th>
-                            <th>Item</th>
-                            <th style="width:80px;">Cost</th>
-                            <th style="width:110px;">Assign To</th>
-                            <th style="width:30px;"></th>
+                            <th class="col-inc">Inc.</th>
+                            <th class="col-desc">Item</th>
+                            <th class="col-cost">Cost</th>
+                            <th class="col-person">Person</th>
+                            <th class="col-del"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -331,25 +370,25 @@
             items.forEach(item => {
                 html += `
                     <tr class="${!item.active ? 'disabled' : ''} ${item.hypothetical ? 'hypothetical' : ''}">
-                        <td>
+                        <td class="col-inc">
                             <input type="checkbox" ${item.active ? 'checked' : ''} 
                                 onchange="updateItem(${item.id}, 'active', this.checked)">
                         </td>
-                        <td>
+                        <td class="col-desc">
                             <input type="text" value="${item.desc}" 
                                 onchange="updateItem(${item.id}, 'desc', this.value)">
                         </td>
-                        <td>
+                        <td class="col-cost">
                             <input type="number" value="${item.amount}" step="0.01" 
                                 onchange="updateItem(${item.id}, 'amount', this.value)">
                         </td>
-                        <td>
+                        <td class="col-person">
                             <select onchange="updateItem(${item.id}, 'person', this.value)">
                                 ${state.people.map(p => `<option value="${p.name}" ${p.name === item.person ? 'selected' : ''}>${p.name}</option>`).join('')}
                             </select>
                         </td>
-                        <td>
-                            <button class="btn btn-danger" style="padding: 2px 6px;" onclick="removeItem(${item.id})">&times;</button>
+                        <td class="col-del">
+                            <button class="btn btn-danger" style="padding: 2px 5px; font-size:0.75rem;" onclick="removeItem(${item.id})">&times;</button>
                         </td>
                     </tr>
                 `;
@@ -359,7 +398,7 @@
                     </tbody>
                 </table>
                 <div class="totals-summary">
-                    Actual Spent: <strong>$${actualSpent.toFixed(2)}</strong> 
+                    Spent: <strong>$${actualSpent.toFixed(2)}</strong> 
                     ${hypotheticalSpent !== actualSpent ? `| With What-Ifs: <strong>$${hypotheticalSpent.toFixed(2)}</strong>` : ''}
                 </div>
             `;
@@ -373,13 +412,13 @@
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
         const downloadAnchor = document.createElement('a');
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", "souvenir_tracker_state.json");
+        downloadAnchor.setAttribute("download", "disney_trip_tracker_updated.json");
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
     }
 
-    // Initial Empty Render
+    // Load prefilled data on page load
     render();
 </script>
 </body>

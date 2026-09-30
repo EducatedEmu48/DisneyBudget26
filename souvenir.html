@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Souvenir & Person Tracker</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f8;
+            --card-bg: #ffffff;
+            --primary-color: #0066cc;
+            --danger-color: #d9534f;
+            --success-color: #28a745;
+            --text-color: #333333;
+            --border-color: #dddddd;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        h1, h2, h3 {
+            margin: 0;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-danger { background-color: var(--danger-color); }
+        .btn-secondary { background-color: #6c757d; }
+
+        .file-import-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .person-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .badge-under { background-color: #e2f0d9; color: #385723; }
+        .badge-over { background-color: #fce4d6; color: #c65911; }
+
+        .item-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .item-table th, .item-table td {
+            padding: 6px;
+            text-align: left;
+            font-size: 0.9em;
+        }
+
+        .item-table tr {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .item-table tr.hypothetical {
+            background-color: #f8f9fa;
+            opacity: 0.7;
+        }
+
+        .item-table tr.disabled {
+            text-decoration: line-through;
+            opacity: 0.4;
+        }
+
+        input[type="text"], input[type="number"], select {
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .form-inline {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .totals-summary {
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Souvenir Budget Tracker</h1>
+        <div class="file-import-container">
+            <input type="file" id="jsonInput" accept=".json" style="display: none;" onchange="importJSON(event)">
+            <button class="btn btn-secondary" onclick="document.getElementById('jsonInput').click()">Import JSON</button>
+            <button class="btn" onclick="exportData()">Export State</button>
+        </div>
+    </header>
+
+    <!-- Quick Add Form -->
+    <div class="card">
+        <h3>Add New Spending</h3>
+        <form id="addForm" class="form-inline" onsubmit="addSpendingItem(event)" style="margin-top: 10px;">
+            <input type="text" id="addDesc" placeholder="Item Description" required>
+            <input type="number" id="addAmount" placeholder="Amount ($)" step="0.01" required>
+            <select id="addPerson" required>
+                <!-- Populated dynamically -->
+            </select>
+            <label style="font-size: 0.85em; display: flex; align-items: center; gap: 4px;">
+                <input type="checkbox" id="addHypothetical"> What-If?
+            </label>
+            <button type="submit" class="btn">Add</button>
+        </form>
+    </div>
+
+    <!-- Grouped People Display -->
+    <div id="peopleGrid" class="grid">
+        <!-- Rendered dynamically -->
+    </div>
+</div>
+
+<script>
+    // Default fallback state matching project specs ($150/person)
+    let state = {
+        people: [
+            { name: "Mom", target: 150 },
+            { name: "Dad", target: 150 },
+            { name: "Eleanor", target: 150 },
+            { name: "Joanna", target: 150 },
+            { name: "Max", target: 150 },
+            { name: "None", target: 0 }
+        ],
+        spendingLog: []
+    };
+
+    // Load initial JSON structures
+    function importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                if (data.people) {
+                    state.people = data.people;
+                    // Ensure 'None' exists for unassigned items
+                    if (!state.people.some(p => p.name === 'None')) {
+                        state.people.push({ name: 'None', target: 0 });
+                    }
+                }
+                
+                if (data.spendingLog) {
+                    state.spendingLog = data.spendingLog.map(item => ({
+                        ...item,
+                        active: true // default enabled status for calculations
+                    }));
+                }
+
+                render();
+            } catch (err) {
+                alert("Invalid JSON file format.");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function addSpendingItem(e) {
+        e.preventDefault();
+        const desc = document.getElementById('addDesc').value;
+        const amount = parseFloat(document.getElementById('addAmount').value);
+        const person = document.getElementById('addPerson').value;
+        const isHypothetical = document.getElementById('addHypothetical').checked;
+
+        const newItem = {
+            id: Date.now(),
+            desc: desc,
+            amount: amount,
+            person: person,
+            envelopeId: "None",
+            paidGC: false,
+            active: true,
+            hypothetical: isHypothetical
+        };
+
+        state.spendingLog.push(newItem);
+        
+        // Reset inputs
+        document.getElementById('addDesc').value = '';
+        document.getElementById('addAmount').value = '';
+        document.getElementById('addHypothetical').checked = false;
+
+        render();
+    }
+
+    function updateItem(id, field, value) {
+        const item = state.spendingLog.find(i => i.id === id);
+        if (item) {
+            if (field === 'amount') item.amount = parseFloat(value) || 0;
+            else if (field === 'person') item.person = value;
+            else if (field === 'desc') item.desc = value;
+            else if (field === 'active') item.active = value;
+            render();
+        }
+    }
+
+    function removeItem(id) {
+        state.spendingLog = state.spendingLog.filter(i => i.id !== id);
+        render();
+    }
+
+    function render() {
+        const grid = document.getElementById('peopleGrid');
+        const personSelect = document.getElementById('addPerson');
+        
+        grid.innerHTML = '';
+        personSelect.innerHTML = '';
+
+        // Populate person dropdown options
+        state.people.forEach(p => {
+            if (p.name !== 'None') {
+                const option = document.createElement('option');
+                option.value = p.name;
+                option.textContent = p.name;
+                personSelect.appendChild(option);
+            }
+        });
+
+        // Render each person's card
+        state.people.forEach(person => {
+            const items = state.spendingLog.filter(i => i.person === person.name);
+            
+            // Calculations
+            const actualSpent = items
+                .filter(i => i.active && !i.hypothetical)
+                .reduce((sum, i) => sum + i.amount, 0);
+                
+            const hypotheticalSpent = items
+                .filter(i => i.active)
+                .reduce((sum, i) => sum + i.amount, 0);
+
+            const isOver = hypotheticalSpent > person.target;
+            const diff = hypotheticalSpent - person.target;
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            let html = `
+                <div class="person-header">
+                    <h2>${person.name}</h2>
+                    <div>
+                        ${person.target > 0 ? `<span style="font-size:0.85em; color:#666;">Target: $${person.target}</span>` : ''}
+                        <span class="badge ${isOver ? 'badge-over' : 'badge-under'}">
+                            ${isOver ? `+$${diff.toFixed(2)} Over` : `$${hypotheticalSpent.toFixed(2)} Total`}
+                        </span>
+                    </div>
+                </div>
+                
+                <table class="item-table">
+                    <thead>
+                        <tr>
+                            <th style="width:30px;">Inc.</th>
+                            <th>Item</th>
+                            <th style="width:80px;">Cost</th>
+                            <th style="width:110px;">Assign To</th>
+                            <th style="width:30px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            items.forEach(item => {
+                html += `
+                    <tr class="${!item.active ? 'disabled' : ''} ${item.hypothetical ? 'hypothetical' : ''}">
+                        <td>
+                            <input type="checkbox" ${item.active ? 'checked' : ''} 
+                                onchange="updateItem(${item.id}, 'active', this.checked)">
+                        </td>
+                        <td>
+                            <input type="text" value="${item.desc}" 
+                                onchange="updateItem(${item.id}, 'desc', this.value)">
+                        </td>
+                        <td>
+                            <input type="number" value="${item.amount}" step="0.01" 
+                                onchange="updateItem(${item.id}, 'amount', this.value)">
+                        </td>
+                        <td>
+                            <select onchange="updateItem(${item.id}, 'person', this.value)">
+                                ${state.people.map(p => `<option value="${p.name}" ${p.name === item.person ? 'selected' : ''}>${p.name}</option>`).join('')}
+                            </select>
+                        </td>
+                        <td>
+                            <button class="btn btn-danger" style="padding: 2px 6px;" onclick="removeItem(${item.id})">&times;</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+                <div class="totals-summary">
+                    Actual Spent: <strong>$${actualSpent.toFixed(2)}</strong> 
+                    ${hypotheticalSpent !== actualSpent ? `| With What-Ifs: <strong>$${hypotheticalSpent.toFixed(2)}</strong>` : ''}
+                </div>
+            `;
+
+            card.innerHTML = html;
+            grid.appendChild(card);
+        });
+    }
+
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "souvenir_tracker_state.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    // Initial Empty Render
+    render();
+</script>
+</body>
+</html>
